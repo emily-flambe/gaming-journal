@@ -19,5 +19,12 @@ dist/
 # Netlify
 .netlify/
 
+# Cloudflare
+.wrangler/
+
+# Playwright
+playwright-report/
+test-results/
+
 # Logs
 *.log

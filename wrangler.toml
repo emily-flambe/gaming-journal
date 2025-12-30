@@ -1,0 +1,23 @@
+name = "gaming-journal"
+main = "src/index.ts"
+compatibility_date = "2025-12-30"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gaming-journal-db"
+database_id = "d08f0a8a-996a-47d7-95fe-69e9ceac194e"
+
+[dev]
+port = 8787
+
+# Secrets (set via wrangler secret put):
+# JWT_SECRET
+# GOOGLE_CLIENT_ID
+# GOOGLE_CLIENT_SECRET
+# DISCORD_CLIENT_ID
+# DISCORD_CLIENT_SECRET
+# RAWG_API_KEY

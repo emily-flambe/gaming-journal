@@ -1,16 +1,108 @@
-# React + Vite
+# Gaming Journal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A personal gaming journal where you track games you play, write notes while playing, and optionally share your timeline publicly.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Timeline Visualization** - See your gaming history with rating-based horizontal positioning
+- **Game Search** - Search RAWG database for games with cover art
+- **Journal Entries** - Write notes while playing a game
+- **OAuth Login** - Sign in with Google or Discord
+- **Public Sharing** - Share your timeline at `/u/username`
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React + Vite + Tailwind CSS
+- **Backend**: Hono.js on Cloudflare Workers
+- **Database**: Cloudflare D1 (SQLite)
+- **Auth**: Google + Discord OAuth
 
-## Expanding the ESLint configuration
+## Development
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+
+- Node.js 18+
+- Cloudflare account
+- RAWG API key (free at https://rawg.io/apidocs)
+- Google OAuth credentials
+- Discord OAuth credentials
+
+### Setup
+
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/emily-flambe/gaming-journal.git
+   cd gaming-journal
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up secrets:
+   ```bash
+   wrangler secret put JWT_SECRET
+   wrangler secret put GOOGLE_CLIENT_ID
+   wrangler secret put GOOGLE_CLIENT_SECRET
+   wrangler secret put DISCORD_CLIENT_ID
+   wrangler secret put DISCORD_CLIENT_SECRET
+   wrangler secret put RAWG_API_KEY
+   ```
+
+4. Initialize the database:
+   ```bash
+   npm run db:init           # Local
+   npm run db:init:remote    # Production
+   ```
+
+5. Run locally:
+   ```bash
+   npm run dev
+   ```
+
+### Scripts
+
+- `npm run dev` - Start development server (builds frontend + wrangler dev)
+- `npm run build:frontend` - Build React frontend
+- `npm run deploy` - Deploy to Cloudflare Workers
+- `npm run db:init` - Initialize local D1 database
+- `npm run db:init:remote` - Initialize remote D1 database
+- `npm test` - Run unit tests
+- `npm run test:e2e` - Run Playwright e2e tests
+
+## Project Structure
+
+```
+gaming-journal/
+├── src/
+│   ├── index.ts              # Hono app entry
+│   ├── types.ts              # TypeScript types
+│   ├── api/                  # API route handlers
+│   │   ├── auth.ts           # OAuth routes
+│   │   ├── logs.ts           # Game log CRUD
+│   │   ├── journal.ts        # Journal entries
+│   │   ├── games.ts          # RAWG search
+│   │   ├── profile.ts        # User settings
+│   │   └── public.ts         # Public timeline
+│   ├── db/
+│   │   └── schema.sql        # D1 schema
+│   ├── lib/
+│   │   ├── auth.ts           # JWT utilities
+│   │   └── oauth/            # OAuth services
+│   ├── middleware/
+│   │   └── auth.ts           # Auth middleware
+│   └── frontend/             # React app
+├── e2e/                      # Playwright tests
+├── .plans/                   # Design docs
+├── wrangler.toml             # Cloudflare config
+└── package.json
+```
+
+## API Endpoints
+
+See [.plans/api-reference.md](.plans/api-reference.md) for full API documentation.
+
+## License
+
+MIT
