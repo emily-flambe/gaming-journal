@@ -2,6 +2,11 @@ name = "gaming-journal"
 main = "src/index.ts"
 compatibility_date = "2025-12-30"
 
+# Custom domain (requires DNS setup in Cloudflare dashboard)
+[[routes]]
+pattern = "gaming.emilycogsdill.com"
+custom_domain = true
+
 [assets]
 directory = "./dist"
 not_found_handling = "single-page-application"
