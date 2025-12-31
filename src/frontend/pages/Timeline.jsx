@@ -283,7 +283,8 @@ export default function Timeline() {
 
       <div className="flex h-[calc(100vh-56px)]">
         {/* Left: Timeline */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="flex-1 overflow-y-auto px-4 py-6" style={{ direction: 'rtl' }}>
+          <div style={{ direction: 'ltr' }}>
           {/* Actions */}
           <div className="flex justify-between items-center mb-6">
             <p className="text-gray-400 text-base">
@@ -404,11 +405,16 @@ export default function Timeline() {
               ))}
             </div>
           )}
+          </div>
         </div>
 
-        {/* Right: Detail Panel - only shows when a game is selected */}
-        {selectedLog && (
-          <div className="w-96 border-l border-gray-700 bg-gray-800 overflow-y-auto flex-shrink-0">
+        {/* Right: Detail Panel - slides in when a game is selected */}
+        <div
+          className={`border-l border-gray-700 bg-gray-800 overflow-y-auto flex-shrink-0 transition-all duration-300 ease-in-out ${
+            selectedLog ? 'w-96 opacity-100' : 'w-0 opacity-0 border-l-0'
+          }`}
+        >
+          {selectedLog && (
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1 min-w-0">
@@ -519,8 +525,8 @@ export default function Timeline() {
                 </>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {showAddModal && (
