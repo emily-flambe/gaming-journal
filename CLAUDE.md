@@ -1,4 +1,4 @@
-# Gaming Journal - Project Guidelines
+# Gaming Journal - Project Guidelines for Claude
 
 ## Timeline Components
 
