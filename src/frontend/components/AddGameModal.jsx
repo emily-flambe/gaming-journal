@@ -8,10 +8,24 @@ export default function AddGameModal({ onClose, onSave }) {
   const [saving, setSaving] = useState(false)
 
   // Form fields
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [rating, setRating] = useState('')
+  const [startYear, setStartYear] = useState('')
+  const [startMonth, setStartMonth] = useState('')
+  const [startDay, setStartDay] = useState('')
+  const [endYear, setEndYear] = useState('')
+  const [endMonth, setEndMonth] = useState('')
+  const [endDay, setEndDay] = useState('')
+  const [rating, setRating] = useState('5')
   const [notes, setNotes] = useState('')
+
+  const currentYear = new Date().getFullYear()
+
+  function buildDate(year, month, day) {
+    if (!year) return null
+    const y = year.toString().padStart(4, '0')
+    const m = (month || '01').toString().padStart(2, '0')
+    const d = (day || '01').toString().padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
 
   const searchTimeout = useRef(null)
   const inputRef = useRef(null)
@@ -66,9 +80,14 @@ export default function AddGameModal({ onClose, onSave }) {
     e.preventDefault()
 
     if (!selectedGame) return
-    if (!startDate && !endDate) {
-      alert('Please enter at least a start or end date')
-      return
+
+    // Build dates from components, default to current year if nothing entered
+    let startDateStr = buildDate(startYear, startMonth, startDay)
+    let endDateStr = buildDate(endYear, endMonth, endDay)
+
+    // If no dates at all, default start to current year
+    if (!startDateStr && !endDateStr) {
+      startDateStr = `${currentYear}-01-01`
     }
 
     setSaving(true)
@@ -80,9 +99,9 @@ export default function AddGameModal({ onClose, onSave }) {
         body: JSON.stringify({
           game_id: selectedGame.id,
           game_name: selectedGame.name,
-          start_date: startDate || null,
-          end_date: endDate || null,
-          rating: rating ? parseInt(rating, 10) : null,
+          start_date: startDateStr,
+          end_date: endDateStr,
+          rating: rating ? parseInt(rating, 10) : 5,
           notes: notes || null,
         }),
       })
@@ -220,30 +239,73 @@ export default function AddGameModal({ onClose, onSave }) {
                 </button>
               </div>
 
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    Start Date
-                  </label>
+              {/* Start Date */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-2">Start Date</label>
+                <div className="grid grid-cols-3 gap-2">
                   <input
-                    type="month"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    type="number"
+                    min="1970"
+                    max="2099"
+                    placeholder="Year"
+                    value={startYear}
+                    onChange={(e) => setStartYear(e.target.value)}
+                    className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    placeholder="Month"
+                    value={startMonth}
+                    onChange={(e) => setStartMonth(e.target.value)}
+                    className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    placeholder="Day"
+                    value={startDay}
+                    onChange={(e) => setStartDay(e.target.value)}
+                    className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    End Date
-                  </label>
+              </div>
+
+              {/* End Date */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-2">End Date</label>
+                <div className="grid grid-cols-3 gap-2">
                   <input
-                    type="month"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    type="number"
+                    min="1970"
+                    max="2099"
+                    placeholder="Year"
+                    value={endYear}
+                    onChange={(e) => setEndYear(e.target.value)}
+                    className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    placeholder="Month"
+                    value={endMonth}
+                    onChange={(e) => setEndMonth(e.target.value)}
+                    className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    placeholder="Day"
+                    value={endDay}
+                    onChange={(e) => setEndDay(e.target.value)}
+                    className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                   />
                 </div>
+                <p className="text-gray-500 text-xs mt-2">Leave blank to default to {currentYear}</p>
               </div>
 
               {/* Rating */}

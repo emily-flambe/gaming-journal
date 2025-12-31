@@ -1,10 +1,20 @@
 import { useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../App'
 
 export default function Login() {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const error = searchParams.get('error')
+
+  const errorMessages = {
+    not_implemented: 'not yet implemented sry lol',
+    oauth_failed: 'Sign in failed. Please try again.',
+    invalid_state: 'Invalid session. Please try again.',
+    email_not_verified: 'Please verify your email first.',
+    missing_params: 'Something went wrong. Please try again.',
+  }
 
   useEffect(() => {
     if (user && !loading) {
@@ -24,6 +34,12 @@ export default function Login() {
 
         <div className="bg-gray-800 rounded-lg p-8 border border-gray-700 shadow-xl">
           <h2 className="text-xl font-semibold text-white mb-6 text-center">Sign In</h2>
+
+          {error && errorMessages[error] && (
+            <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm text-center">
+              {errorMessages[error]}
+            </div>
+          )}
 
           <div className="space-y-4">
             <a

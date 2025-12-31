@@ -38,8 +38,8 @@ games.get('/search', async (c) => {
     const params = new URLSearchParams({
       key: c.env.RAWG_API_KEY,
       search: query,
+      search_precise: 'true',
       page_size: '20',
-      ordering: '-rating',
     });
 
     const response = await fetch(`${RAWG_API_URL}/games?${params}`);

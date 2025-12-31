@@ -136,19 +136,9 @@ auth.get('/google/callback', async (c) => {
   }
 });
 
-// GET /api/auth/discord - Initiate Discord OAuth
+// GET /api/auth/discord - Initiate Discord OAuth (not implemented yet)
 auth.get('/discord', async (c) => {
-  const stateManager = new OAuthStateManager(c.env.JWT_SECRET);
-  const state = await stateManager.createState('discord');
-
-  const config: DiscordOAuthConfig = {
-    clientId: c.env.DISCORD_CLIENT_ID,
-    clientSecret: c.env.DISCORD_CLIENT_SECRET,
-    redirectUri: c.env.DISCORD_REDIRECT_URI,
-  };
-
-  const authUrl = getDiscordAuthUrl(config, state);
-  return c.redirect(authUrl);
+  return c.redirect('/login?error=not_implemented');
 });
 
 // GET /api/auth/discord/callback - Handle Discord OAuth callback

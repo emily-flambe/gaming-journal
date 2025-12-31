@@ -44,26 +44,24 @@ logs.post('/', async (c) => {
 
   const { game_id, game_name, start_date, end_date, rating, notes } = body;
 
-  if (!game_name || rating === undefined) {
+  if (!game_name) {
     return c.json({
       data: null,
-      error: { message: 'game_name and rating are required', code: 'VALIDATION_ERROR' }
+      error: { message: 'game_name is required', code: 'VALIDATION_ERROR' }
     }, 400);
   }
 
-  if (rating < 1 || rating > 10) {
+  if (rating !== undefined && rating !== null && (rating < 1 || rating > 10)) {
     return c.json({
       data: null,
       error: { message: 'rating must be between 1 and 10', code: 'VALIDATION_ERROR' }
     }, 400);
   }
 
-  if (!start_date && !end_date) {
-    return c.json({
-      data: null,
-      error: { message: 'At least one of start_date or end_date is required', code: 'VALIDATION_ERROR' }
-    }, 400);
-  }
+  // Default to current year if no dates provided
+  const finalStartDate = start_date || (end_date ? null : `${new Date().getFullYear()}-01-01`);
+  const finalEndDate = end_date || null;
+  const finalRating = rating ?? 5;
 
   // Get next sort_order
   const maxOrder = await c.env.DB.prepare(
@@ -76,7 +74,7 @@ logs.post('/', async (c) => {
   await c.env.DB.prepare(`
     INSERT INTO game_logs (id, user_id, game_id, game_name, start_date, end_date, rating, notes, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(id, userId, game_id || null, game_name, start_date || null, end_date || null, rating, notes || null, sortOrder).run();
+  `).bind(id, userId, game_id || null, game_name, finalStartDate, finalEndDate, finalRating, notes || null, sortOrder).run();
 
   const log = await c.env.DB.prepare(
     'SELECT * FROM game_logs WHERE id = ?'
