@@ -115,7 +115,7 @@ export default function Timeline() {
     const newRating = dragRating
 
     // If just changing rating (no vertical reorder)
-    if (!dropTarget && draggedId && newRating) {
+    if (!dropTarget && draggedId && newRating !== null) {
       const draggedLog = logs.find(l => l.id === draggedId)
       if (draggedLog && draggedLog.rating !== newRating) {
         // Update local state
@@ -172,7 +172,7 @@ export default function Timeline() {
     const updatedLogs = logs.map(log => {
       const idx = yearLogs.findIndex(l => l.id === log.id)
       if (log.id === draggedId) {
-        return { ...log, sort_order: idx !== -1 ? idx : log.sort_order, rating: newRating || log.rating }
+        return { ...log, sort_order: idx !== -1 ? idx : log.sort_order, rating: newRating !== null ? newRating : log.rating }
       }
       if (idx !== -1) {
         return { ...log, sort_order: idx }
@@ -192,7 +192,7 @@ export default function Timeline() {
       })
       // Also update rating if changed
       const draggedLog = logs.find(l => l.id === draggedId)
-      if (newRating && draggedLog?.rating !== newRating) {
+      if (newRating !== null && draggedLog?.rating !== newRating) {
         await fetch(`/api/logs/${draggedId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -282,136 +282,10 @@ export default function Timeline() {
       </header>
 
       <div className="flex h-[calc(100vh-56px)]">
-        {/* Left: Timeline */}
-        <div className="flex-1 overflow-y-auto px-4 py-6" style={{ direction: 'rtl' }}>
-          <div style={{ direction: 'ltr' }}>
-          {/* Actions */}
-          <div className="flex justify-between items-center mb-6">
-            <p className="text-gray-400 text-base">
-              ← Liked Less | Liked More →
-            </p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
-            >
-              + Add Game
-            </button>
-          </div>
-
-          {/* Legend */}
-          <div className="flex justify-center gap-4 mb-6 text-sm">
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400"></span> Disliked (0-4)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Mixed (5-6)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500"></span> Liked (7-8)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Loved (9-10)</div>
-          </div>
-
-          {/* Timeline */}
-          {logs.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-gray-400 mb-4">No games logged yet.</p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Add Your First Game
-              </button>
-            </div>
-          ) : (
-            <div
-              ref={timelineRef}
-              className="relative"
-              onDragOver={handleTimelineDragOver}
-              onDrop={(e) => { if (draggedId && !dropTarget) handleDrop(e, null) }}
-            >
-              {/* Center line */}
-              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-700 -translate-x-1/2"></div>
-
-              {/* Rating guide lines (shown when dragging) */}
-              {draggedId && (
-                <>
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(r => {
-                    const pos = getPosition(r)
-                    const isActive = dragRating === r
-                    return (
-                      <div
-                        key={r}
-                        className={`absolute top-0 bottom-0 w-px transition-opacity ${
-                          isActive ? 'bg-purple-400 opacity-100' : 'bg-gray-600 opacity-30'
-                        }`}
-                        style={{ left: `${pos}%` }}
-                      >
-                        <span className={`absolute -top-6 left-1/2 -translate-x-1/2 text-sm ${
-                          isActive ? 'text-purple-400 font-bold' : 'text-gray-500'
-                        }`}>
-                          {r}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </>
-              )}
-
-              {years.map(year => (
-                <div key={year} className="mb-8">
-                  <div className="sticky top-0 z-10 bg-gray-900/95 py-2 border-b border-gray-700 mb-4">
-                    <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    {logsByYear[year].map((log) => {
-                      const left = getPosition(log.rating)
-                      const isSelected = selectedLog?.id === log.id
-                      const isDragging = draggedId === log.id
-                      const showLineBefore = dropTarget?.id === log.id && dropTarget?.position === 'before'
-                      const showLineAfter = dropTarget?.id === log.id && dropTarget?.position === 'after'
-
-                      return (
-                        <div
-                          key={log.id}
-                          className="relative"
-                          onDragOver={(e) => handleDragOver(e, log.id)}
-                          onDrop={(e) => handleDrop(e, year)}
-                        >
-                          {showLineBefore && (
-                            <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
-                          )}
-                          <div className="h-10">
-                            <button
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, log.id, log.rating)}
-                              onDragEnd={handleDragEnd}
-                              onClick={() => setSelectedLog(isSelected ? null : log)}
-                              className={`absolute px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
-                                ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
-                                ${isDragging ? 'opacity-50 scale-95' : ''}
-                                hover:brightness-110 text-white shadow-lg whitespace-nowrap cursor-grab active:cursor-grabbing`}
-                              style={{
-                                left: `${left}%`,
-                                transform: 'translateX(-50%)',
-                              }}
-                            >
-                              {log.game_name.length > 25 ? log.game_name.substring(0, 23) + '...' : log.game_name}
-                            </button>
-                          </div>
-                          {showLineAfter && (
-                            <div className="absolute left-0 right-0 bottom-0 h-0.5 bg-purple-500 z-30" />
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          </div>
-        </div>
-
-        {/* Right: Detail Panel - slides in when a game is selected */}
+        {/* Left: Detail Panel - slides in when a game is selected */}
         <div
-          className={`border-l border-gray-700 bg-gray-800 overflow-y-auto flex-shrink-0 transition-all duration-300 ease-in-out ${
-            selectedLog ? 'w-80 opacity-100' : 'w-0 opacity-0 border-l-0'
+          className={`border-r border-gray-700 bg-gray-800 overflow-y-auto flex-shrink-0 transition-all duration-300 ease-in-out ${
+            selectedLog ? 'w-80 opacity-100' : 'w-0 opacity-0 border-r-0'
           }`}
         >
           {selectedLog && (
@@ -526,6 +400,129 @@ export default function Timeline() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Right: Timeline */}
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div>
+          {/* Actions */}
+          <div className="flex justify-end mb-6">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+            >
+              + Add Game
+            </button>
+          </div>
+
+          {/* Legend */}
+          <div className="flex justify-center gap-4 mb-6 text-sm">
+            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400"></span> Disliked (0-4)</div>
+            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Mixed (5-6)</div>
+            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500"></span> Liked (7-8)</div>
+            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Loved (9-10)</div>
+          </div>
+
+          {/* Timeline */}
+          {logs.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-400 mb-4">No games logged yet.</p>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Add Your First Game
+              </button>
+            </div>
+          ) : (
+            <div
+              ref={timelineRef}
+              className="relative"
+              onDragOver={handleTimelineDragOver}
+              onDrop={(e) => { if (draggedId && !dropTarget) handleDrop(e, null) }}
+            >
+              {/* Center line */}
+              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-700 -translate-x-1/2"></div>
+
+              {/* Rating guide lines (shown when dragging) */}
+              {draggedId && (
+                <>
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(r => {
+                    const pos = getPosition(r)
+                    const isActive = dragRating === r
+                    return (
+                      <div
+                        key={r}
+                        className={`absolute top-0 bottom-0 w-px transition-opacity ${
+                          isActive ? 'bg-purple-400 opacity-100' : 'bg-gray-600 opacity-30'
+                        }`}
+                        style={{ left: `${pos}%` }}
+                      >
+                        <span className={`absolute -top-6 left-1/2 -translate-x-1/2 text-sm ${
+                          isActive ? 'text-purple-400 font-bold' : 'text-gray-500'
+                        }`}>
+                          {r}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+
+              {years.map(year => (
+                <div key={year} className="mb-8">
+                  <div className="sticky top-0 z-10 bg-gray-900/95 py-2 border-b border-gray-700 mb-4">
+                    <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {logsByYear[year].map((log) => {
+                      const left = getPosition(log.rating)
+                      const isSelected = selectedLog?.id === log.id
+                      const isDragging = draggedId === log.id
+                      const showLineBefore = dropTarget?.id === log.id && dropTarget?.position === 'before'
+                      const showLineAfter = dropTarget?.id === log.id && dropTarget?.position === 'after'
+
+                      return (
+                        <div
+                          key={log.id}
+                          className="relative"
+                          onDragOver={(e) => handleDragOver(e, log.id)}
+                          onDrop={(e) => handleDrop(e, year)}
+                        >
+                          {showLineBefore && (
+                            <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
+                          )}
+                          <div className="h-10">
+                            <button
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, log.id, log.rating)}
+                              onDragEnd={handleDragEnd}
+                              onClick={() => setSelectedLog(isSelected ? null : log)}
+                              className={`absolute px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
+                                ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
+                                ${isDragging ? 'opacity-50 scale-95' : ''}
+                                hover:brightness-110 text-white shadow-lg cursor-grab active:cursor-grabbing text-center max-w-[180px]`}
+                              style={{
+                                left: `${left}%`,
+                                transform: 'translateX(-50%)',
+                              }}
+                            >
+                              {log.game_name}
+                            </button>
+                          </div>
+                          {showLineAfter && (
+                            <div className="absolute left-0 right-0 bottom-0 h-0.5 bg-purple-500 z-30" />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          </div>
         </div>
       </div>
 
