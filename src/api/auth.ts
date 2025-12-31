@@ -4,7 +4,6 @@ import type { Env, User } from '../types';
 import {
   createToken,
   generateId,
-  generateStateToken,
   createSessionCookie,
   clearSessionCookie,
   getSessionFromCookie,
@@ -23,26 +22,16 @@ import {
   getDiscordAvatarUrl,
   DiscordOAuthConfig,
 } from '../lib/oauth/discord';
+import { OAuthStateManager } from '../lib/oauth/state';
 
 const auth = new Hono<{ Bindings: Env }>();
 
-// Store state tokens temporarily (in production, use KV or D1)
-const stateTokens = new Map<string, { provider: string; expires: number }>();
-
-// Clean up expired state tokens
-function cleanupStateTokens() {
-  const now = Date.now();
-  for (const [key, value] of stateTokens.entries()) {
-    if (value.expires < now) {
-      stateTokens.delete(key);
-    }
-  }
-}
-
-// Helper to get base URL from request
-function getBaseUrl(c: any): string {
+// Helper to check if request is over HTTPS (for cookie Secure flag)
+// Note: We check the URL protocol, not the Host header, because Wrangler
+// dev server rewrites Host header based on custom domain config
+function isSecureRequest(c: any): boolean {
   const url = new URL(c.req.url);
-  return `${url.protocol}//${url.host}`;
+  return url.protocol === 'https:';
 }
 
 // Generate username from email
@@ -53,16 +42,14 @@ function generateUsername(email: string): string {
 }
 
 // GET /api/auth/google - Initiate Google OAuth
-auth.get('/google', (c) => {
-  cleanupStateTokens();
-
-  const state = generateStateToken();
-  stateTokens.set(state, { provider: 'google', expires: Date.now() + 10 * 60 * 1000 }); // 10 min
+auth.get('/google', async (c) => {
+  const stateManager = new OAuthStateManager(c.env.JWT_SECRET);
+  const state = await stateManager.createState('google');
 
   const config: GoogleOAuthConfig = {
     clientId: c.env.GOOGLE_CLIENT_ID,
     clientSecret: c.env.GOOGLE_CLIENT_SECRET,
-    redirectUri: `${getBaseUrl(c)}/api/auth/google/callback`,
+    redirectUri: c.env.GOOGLE_REDIRECT_URI,
   };
 
   const authUrl = getGoogleAuthUrl(config, state);
@@ -78,17 +65,18 @@ auth.get('/google/callback', async (c) => {
     return c.redirect('/login?error=missing_params');
   }
 
-  const stateData = stateTokens.get(state);
-  if (!stateData || stateData.provider !== 'google' || stateData.expires < Date.now()) {
+  const stateManager = new OAuthStateManager(c.env.JWT_SECRET);
+  try {
+    await stateManager.verifyState(state, 'google');
+  } catch {
     return c.redirect('/login?error=invalid_state');
   }
-  stateTokens.delete(state);
 
   try {
     const config: GoogleOAuthConfig = {
       clientId: c.env.GOOGLE_CLIENT_ID,
       clientSecret: c.env.GOOGLE_CLIENT_SECRET,
-      redirectUri: `${getBaseUrl(c)}/api/auth/google/callback`,
+      redirectUri: c.env.GOOGLE_REDIRECT_URI,
     };
 
     const tokens = await exchangeGoogleCode(code, config);
@@ -127,14 +115,21 @@ auth.get('/google/callback', async (c) => {
     const token = await createToken(user.id, c.env.JWT_SECRET);
 
     // Set cookie and redirect
-    c.header('Set-Cookie', createSessionCookie(token));
+    const secure = isSecureRequest(c);
+    const cookie = createSessionCookie(token, secure);
 
     // Redirect to settings if username looks auto-generated
-    if (user.username.includes('-') && user.username.length < 20) {
-      return c.redirect('/settings?setup=true');
-    }
+    const redirectUrl = (user.username.includes('-') && user.username.length < 20)
+      ? '/settings?setup=true'
+      : '/timeline';
 
-    return c.redirect('/timeline');
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': redirectUrl,
+        'Set-Cookie': cookie,
+      },
+    });
   } catch (error) {
     console.error('Google OAuth error:', error);
     return c.redirect('/login?error=oauth_failed');
@@ -142,16 +137,14 @@ auth.get('/google/callback', async (c) => {
 });
 
 // GET /api/auth/discord - Initiate Discord OAuth
-auth.get('/discord', (c) => {
-  cleanupStateTokens();
-
-  const state = generateStateToken();
-  stateTokens.set(state, { provider: 'discord', expires: Date.now() + 10 * 60 * 1000 });
+auth.get('/discord', async (c) => {
+  const stateManager = new OAuthStateManager(c.env.JWT_SECRET);
+  const state = await stateManager.createState('discord');
 
   const config: DiscordOAuthConfig = {
     clientId: c.env.DISCORD_CLIENT_ID,
     clientSecret: c.env.DISCORD_CLIENT_SECRET,
-    redirectUri: `${getBaseUrl(c)}/api/auth/discord/callback`,
+    redirectUri: c.env.DISCORD_REDIRECT_URI,
   };
 
   const authUrl = getDiscordAuthUrl(config, state);
@@ -167,17 +160,18 @@ auth.get('/discord/callback', async (c) => {
     return c.redirect('/login?error=missing_params');
   }
 
-  const stateData = stateTokens.get(state);
-  if (!stateData || stateData.provider !== 'discord' || stateData.expires < Date.now()) {
+  const stateManager = new OAuthStateManager(c.env.JWT_SECRET);
+  try {
+    await stateManager.verifyState(state, 'discord');
+  } catch {
     return c.redirect('/login?error=invalid_state');
   }
-  stateTokens.delete(state);
 
   try {
     const config: DiscordOAuthConfig = {
       clientId: c.env.DISCORD_CLIENT_ID,
       clientSecret: c.env.DISCORD_CLIENT_SECRET,
-      redirectUri: `${getBaseUrl(c)}/api/auth/discord/callback`,
+      redirectUri: c.env.DISCORD_REDIRECT_URI,
     };
 
     const tokens = await exchangeDiscordCode(code, config);
@@ -219,14 +213,21 @@ auth.get('/discord/callback', async (c) => {
     const token = await createToken(user.id, c.env.JWT_SECRET);
 
     // Set cookie and redirect
-    c.header('Set-Cookie', createSessionCookie(token));
+    const secure = isSecureRequest(c);
+    const cookie = createSessionCookie(token, secure);
 
     // Redirect to settings if username looks auto-generated
-    if (user.username.includes('-') && user.username.length < 20) {
-      return c.redirect('/settings?setup=true');
-    }
+    const redirectUrl = (user.username.includes('-') && user.username.length < 20)
+      ? '/settings?setup=true'
+      : '/timeline';
 
-    return c.redirect('/timeline');
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': redirectUrl,
+        'Set-Cookie': cookie,
+      },
+    });
   } catch (error) {
     console.error('Discord OAuth error:', error);
     return c.redirect('/login?error=oauth_failed');
@@ -235,7 +236,8 @@ auth.get('/discord/callback', async (c) => {
 
 // POST /api/auth/logout - Clear session
 auth.post('/logout', (c) => {
-  c.header('Set-Cookie', clearSessionCookie());
+  const secure = isSecureRequest(c);
+  c.header('Set-Cookie', clearSessionCookie(secure));
   return c.json({ data: { success: true }, error: null });
 });
 

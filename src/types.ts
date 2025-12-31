@@ -1,11 +1,14 @@
 // Environment bindings for Cloudflare Workers
 export interface Env {
   DB: D1Database;
+  ASSETS: Fetcher;
   JWT_SECRET: string;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
+  GOOGLE_REDIRECT_URI: string;
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
+  DISCORD_REDIRECT_URI: string;
   RAWG_API_KEY: string;
 }
 

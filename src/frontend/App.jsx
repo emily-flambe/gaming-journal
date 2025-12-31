@@ -22,10 +22,10 @@ function AuthProvider({ children }) {
 
   async function checkAuth() {
     try {
-      const res = await fetch('/api/auth/me')
+      const res = await fetch('/api/auth/me', { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        setUser(data.user)
+        setUser(data.data)
       }
     } catch (err) {
       console.error('Auth check failed:', err)
@@ -36,7 +36,7 @@ function AuthProvider({ children }) {
 
   async function logout() {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
       setUser(null)
     } catch (err) {
       console.error('Logout failed:', err)

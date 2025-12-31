@@ -16,10 +16,10 @@ export default function Timeline() {
 
   async function fetchLogs() {
     try {
-      const res = await fetch('/api/logs')
+      const res = await fetch('/api/logs', { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        setLogs(data.logs || [])
+        setLogs(data.data || [])
       }
     } catch (err) {
       console.error('Failed to fetch logs:', err)

@@ -18,8 +18,8 @@ export default function PublicTimeline() {
       const res = await fetch(`/api/u/${username}`)
       if (res.ok) {
         const data = await res.json()
-        setProfile(data.user)
-        setLogs(data.logs || [])
+        setProfile(data.data?.user)
+        setLogs(data.data?.logs || [])
       } else if (res.status === 404) {
         setError('User not found')
       } else {

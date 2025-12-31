@@ -93,13 +93,21 @@ export function generateStateToken(): string {
 }
 
 // Cookie helpers
-export function createSessionCookie(token: string): string {
+export function createSessionCookie(token: string, isSecure: boolean = true): string {
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
-  return `session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
+  const parts = [`session=${token}`, 'HttpOnly', 'SameSite=Lax', 'Path=/', `Max-Age=${maxAge}`];
+  if (isSecure) {
+    parts.push('Secure');
+  }
+  return parts.join('; ');
 }
 
-export function clearSessionCookie(): string {
-  return 'session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0';
+export function clearSessionCookie(isSecure: boolean = true): string {
+  const parts = ['session=', 'HttpOnly', 'SameSite=Lax', 'Path=/', 'Max-Age=0'];
+  if (isSecure) {
+    parts.push('Secure');
+  }
+  return parts.join('; ');
 }
 
 export function getSessionFromCookie(cookieHeader: string | undefined): string | null {
@@ -107,5 +115,6 @@ export function getSessionFromCookie(cookieHeader: string | undefined): string |
   const cookies = cookieHeader.split(';').map(c => c.trim());
   const sessionCookie = cookies.find(c => c.startsWith('session='));
   if (!sessionCookie) return null;
-  return sessionCookie.split('=')[1] || null;
+  // Use substring to handle tokens with '=' characters (Base64 padding)
+  return sessionCookie.substring('session='.length) || null;
 }

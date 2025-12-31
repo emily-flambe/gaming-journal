@@ -44,10 +44,10 @@ export default function AddGameModal({ onClose, onSave }) {
   async function searchGames(query) {
     setSearching(true)
     try {
-      const res = await fetch(`/api/games/search?q=${encodeURIComponent(query)}`)
+      const res = await fetch(`/api/games/search?q=${encodeURIComponent(query)}`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        setSearchResults(data.games || [])
+        setSearchResults(data.data || [])
       }
     } catch (err) {
       console.error('Search failed:', err)
@@ -76,6 +76,7 @@ export default function AddGameModal({ onClose, onSave }) {
       const res = await fetch('/api/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           game_id: selectedGame.id,
           game_name: selectedGame.name,

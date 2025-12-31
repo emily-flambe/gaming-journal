@@ -19,13 +19,14 @@ export default function Settings() {
 
   async function fetchProfile() {
     try {
-      const res = await fetch('/api/profile')
+      const res = await fetch('/api/profile', { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        setProfile(data.user)
-        setUsername(data.user.username || '')
-        setDisplayName(data.user.display_name || '')
-        setIsPublic(data.user.is_public || false)
+        const user = data.data
+        setProfile(user)
+        setUsername(user.username || '')
+        setDisplayName(user.display_name || '')
+        setIsPublic(user.is_public || false)
       }
     } catch (err) {
       console.error('Failed to fetch profile:', err)
@@ -43,6 +44,7 @@ export default function Settings() {
       const res = await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           username,
           display_name: displayName,

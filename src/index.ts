@@ -36,12 +36,16 @@ app.route('/api/profile', profile);
 app.route('/api/u', publicTimeline);
 
 // 404 handler for API routes
-app.notFound((c) => {
+app.notFound(async (c) => {
   // Only return JSON 404 for /api routes
   if (c.req.path.startsWith('/api')) {
     return c.json({ data: null, error: { message: 'Not found', code: 'NOT_FOUND' } }, 404);
   }
-  // Let static file handler deal with other routes
+  // Serve static assets for non-API routes
+  const assets = c.env.ASSETS;
+  if (assets) {
+    return assets.fetch(c.req.raw);
+  }
   return c.notFound();
 });
 
