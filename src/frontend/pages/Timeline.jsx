@@ -358,7 +358,7 @@ export default function Timeline() {
                     <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
                   </div>
 
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-3">
                     {logsByYear[year].map((log) => {
                       const left = getPosition(log.rating)
                       const isSelected = selectedLog?.id === log.id
@@ -376,13 +376,13 @@ export default function Timeline() {
                           {showLineBefore && (
                             <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
                           )}
-                          <div className="h-12">
+                          <div className="h-10">
                             <button
                               draggable
                               onDragStart={(e) => handleDragStart(e, log.id, log.rating)}
                               onDragEnd={handleDragEnd}
                               onClick={() => setSelectedLog(isSelected ? null : log)}
-                              className={`absolute px-3 py-2 rounded text-base font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
+                              className={`absolute px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
                                 ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
                                 ${isDragging ? 'opacity-50 scale-95' : ''}
                                 hover:brightness-110 text-white shadow-lg whitespace-nowrap cursor-grab active:cursor-grabbing`}
