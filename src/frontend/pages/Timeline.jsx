@@ -475,7 +475,7 @@ export default function Timeline() {
                     <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
                   </div>
 
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-6">
                     {logsByYear[year].map((log) => {
                       const left = getPosition(log.rating)
                       const isSelected = selectedLog?.id === log.id

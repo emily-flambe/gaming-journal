@@ -45,15 +45,13 @@ export default function PublicTimeline() {
   const years = Object.keys(logsByYear).sort((a, b) => b - a)
 
   const getPosition = (rating) => {
-    if (!rating) return 50
-    const min = 1
-    const max = 10
-    const normalized = (rating - min) / (max - min)
-    return 5 + normalized * 90
+    if (rating === undefined || rating === null) return 50
+    // 0-10 scale: 0 → 5%, 5 → 50%, 10 → 95%
+    return 5 + (rating / 10) * 90
   }
 
   const getColor = (rating) => {
-    if (!rating) return 'bg-gray-500'
+    if (rating === undefined || rating === null) return 'bg-gray-500'
     if (rating >= 9) return 'bg-emerald-500'
     if (rating >= 7) return 'bg-blue-500'
     if (rating >= 5) return 'bg-amber-500'
@@ -61,7 +59,7 @@ export default function PublicTimeline() {
   }
 
   const getBorderColor = (rating) => {
-    if (!rating) return 'border-gray-400'
+    if (rating === undefined || rating === null) return 'border-gray-400'
     if (rating >= 9) return 'border-emerald-400'
     if (rating >= 7) return 'border-blue-400'
     if (rating >= 5) return 'border-amber-400'
@@ -108,16 +106,12 @@ export default function PublicTimeline() {
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         {/* Legend */}
-        <div className="flex justify-center gap-4 mb-6 text-xs">
-          <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400"></span> Disliked (1-4)</div>
+        <div className="flex justify-center gap-4 mb-6 text-sm">
+          <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400"></span> Disliked (0-4)</div>
           <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Mixed (5-6)</div>
           <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500"></span> Liked (7-8)</div>
           <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Loved (9-10)</div>
         </div>
-
-        <p className="text-center text-gray-400 mb-6 text-sm">
-          ← Liked Less | Liked More →
-        </p>
 
         {/* Timeline */}
         {logs.length === 0 ? (
@@ -134,24 +128,24 @@ export default function PublicTimeline() {
                   <h2 className="text-xl font-bold text-center text-purple-400">{year}</h2>
                 </div>
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-6">
                   {logsByYear[year].map((log) => {
                     const left = getPosition(log.rating)
                     const isSelected = selectedLog?.id === log.id
 
                     return (
-                      <div key={log.id} className="relative h-7">
+                      <div key={log.id} className="relative h-10">
                         <button
                           onClick={() => setSelectedLog(isSelected ? null : log)}
-                          className={`absolute px-2 py-1 rounded text-xs font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
+                          className={`absolute px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
                             ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
-                            hover:brightness-110 text-white shadow-lg whitespace-nowrap`}
+                            hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]`}
                           style={{
                             left: `${left}%`,
                             transform: 'translateX(-50%)',
                           }}
                         >
-                          {log.game_name.length > 25 ? log.game_name.substring(0, 23) + '...' : log.game_name}
+                          {log.game_name}
                         </button>
                       </div>
                     )
@@ -176,7 +170,7 @@ export default function PublicTimeline() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {selectedLog.rating && (
+                  {selectedLog.rating !== undefined && selectedLog.rating !== null && (
                     <span className={`px-3 py-1 rounded-full text-sm font-bold ${getColor(selectedLog.rating)}`}>
                       {selectedLog.rating}/10
                     </span>
