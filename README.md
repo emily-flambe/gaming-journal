@@ -7,7 +7,7 @@ A personal gaming journal where you track games you play, write notes while play
 - **Timeline Visualization** - See your gaming history with rating-based horizontal positioning
 - **Game Search** - Search RAWG database for games with cover art
 - **Journal Entries** - Write notes while playing a game
-- **OAuth Login** - Sign in with Google or Discord
+- **OAuth Login** - Sign in with Google
 - **Public Sharing** - Share your timeline at `/u/username`
 
 ## Tech Stack
@@ -15,7 +15,7 @@ A personal gaming journal where you track games you play, write notes while play
 - **Frontend**: React + Vite + Tailwind CSS
 - **Backend**: Hono.js on Cloudflare Workers
 - **Database**: Cloudflare D1 (SQLite)
-- **Auth**: Google + Discord OAuth
+- **Auth**: Google OAuth
 
 ## Development
 
@@ -25,7 +25,6 @@ A personal gaming journal where you track games you play, write notes while play
 - Cloudflare account
 - RAWG API key (free at https://rawg.io/apidocs)
 - Google OAuth credentials
-- Discord OAuth credentials
 
 ### Setup
 
@@ -45,8 +44,6 @@ A personal gaming journal where you track games you play, write notes while play
    wrangler secret put JWT_SECRET
    wrangler secret put GOOGLE_CLIENT_ID
    wrangler secret put GOOGLE_CLIENT_SECRET
-   wrangler secret put DISCORD_CLIENT_ID
-   wrangler secret put DISCORD_CLIENT_SECRET
    wrangler secret put RAWG_API_KEY
    ```
 

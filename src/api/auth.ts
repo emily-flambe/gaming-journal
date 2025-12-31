@@ -15,13 +15,6 @@ import {
   getGoogleUserInfo,
   GoogleOAuthConfig,
 } from '../lib/oauth/google';
-import {
-  getDiscordAuthUrl,
-  exchangeDiscordCode,
-  getDiscordUserInfo,
-  getDiscordAvatarUrl,
-  DiscordOAuthConfig,
-} from '../lib/oauth/discord';
 import { OAuthStateManager } from '../lib/oauth/state';
 
 const auth = new Hono<{ Bindings: Env }>();
@@ -136,93 +129,6 @@ auth.get('/google/callback', async (c) => {
   }
 });
 
-// GET /api/auth/discord - Initiate Discord OAuth (not implemented yet)
-auth.get('/discord', async (c) => {
-  return c.redirect('/login?error=not_implemented');
-});
-
-// GET /api/auth/discord/callback - Handle Discord OAuth callback
-auth.get('/discord/callback', async (c) => {
-  const code = c.req.query('code');
-  const state = c.req.query('state');
-
-  if (!code || !state) {
-    return c.redirect('/login?error=missing_params');
-  }
-
-  const stateManager = new OAuthStateManager(c.env.JWT_SECRET);
-  try {
-    await stateManager.verifyState(state, 'discord');
-  } catch {
-    return c.redirect('/login?error=invalid_state');
-  }
-
-  try {
-    const config: DiscordOAuthConfig = {
-      clientId: c.env.DISCORD_CLIENT_ID,
-      clientSecret: c.env.DISCORD_CLIENT_SECRET,
-      redirectUri: c.env.DISCORD_REDIRECT_URI,
-    };
-
-    const tokens = await exchangeDiscordCode(code, config);
-    const userInfo = await getDiscordUserInfo(tokens.access_token);
-
-    if (!userInfo.verified) {
-      return c.redirect('/login?error=email_not_verified');
-    }
-
-    // Check if user exists by Discord ID or email
-    let user = await c.env.DB.prepare(
-      'SELECT * FROM users WHERE discord_id = ? OR email = ?'
-    ).bind(userInfo.id, userInfo.email).first<User>();
-
-    const avatarUrl = getDiscordAvatarUrl(userInfo.id, userInfo.avatar);
-    const displayName = userInfo.global_name || userInfo.username;
-
-    if (user) {
-      // Update Discord ID if not set (account linking)
-      if (!user.discord_id) {
-        await c.env.DB.prepare(
-          'UPDATE users SET discord_id = ?, avatar_url = COALESCE(avatar_url, ?), updated_at = unixepoch() WHERE id = ?'
-        ).bind(userInfo.id, avatarUrl, user.id).run();
-      }
-    } else {
-      // Create new user
-      const userId = generateId();
-      const username = generateUsername(userInfo.email);
-
-      await c.env.DB.prepare(`
-        INSERT INTO users (id, username, email, display_name, avatar_url, discord_id)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).bind(userId, username, userInfo.email, displayName, avatarUrl, userInfo.id).run();
-
-      user = { id: userId, username, email: userInfo.email } as User;
-    }
-
-    // Create session token
-    const token = await createToken(user.id, c.env.JWT_SECRET);
-
-    // Set cookie and redirect
-    const secure = isSecureRequest(c);
-    const cookie = createSessionCookie(token, secure);
-
-    // Redirect to settings if username looks auto-generated
-    const redirectUrl = (user.username.includes('-') && user.username.length < 20)
-      ? '/settings?setup=true'
-      : '/timeline';
-
-    return new Response(null, {
-      status: 302,
-      headers: {
-        'Location': redirectUrl,
-        'Set-Cookie': cookie,
-      },
-    });
-  } catch (error) {
-    console.error('Discord OAuth error:', error);
-    return c.redirect('/login?error=oauth_failed');
-  }
-});
 
 // POST /api/auth/logout - Clear session
 auth.post('/logout', (c) => {

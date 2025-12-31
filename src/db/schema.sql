@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS users (
   display_name TEXT,
   avatar_url TEXT,
   google_id TEXT UNIQUE,
-  discord_id TEXT UNIQUE,
   is_public INTEGER DEFAULT 0,
   created_at INTEGER DEFAULT (unixepoch()),
   updated_at INTEGER DEFAULT (unixepoch())
@@ -55,7 +54,6 @@ CREATE TABLE IF NOT EXISTS journal_entries (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
-CREATE INDEX IF NOT EXISTS idx_users_discord_id ON users(discord_id);
 CREATE INDEX IF NOT EXISTS idx_game_logs_user ON game_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_game_logs_user_date ON game_logs(user_id, end_date);
 CREATE INDEX IF NOT EXISTS idx_journal_game_log ON journal_entries(game_log_id);

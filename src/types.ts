@@ -6,9 +6,6 @@ export interface Env {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   GOOGLE_REDIRECT_URI: string;
-  DISCORD_CLIENT_ID: string;
-  DISCORD_CLIENT_SECRET: string;
-  DISCORD_REDIRECT_URI: string;
   RAWG_API_KEY: string;
 }
 
@@ -20,7 +17,6 @@ export interface User {
   display_name: string | null;
   avatar_url: string | null;
   google_id: string | null;
-  discord_id: string | null;
   is_public: boolean;
   created_at: number;
   updated_at: number;
