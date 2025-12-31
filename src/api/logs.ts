@@ -51,10 +51,10 @@ logs.post('/', async (c) => {
     }, 400);
   }
 
-  if (rating !== undefined && rating !== null && (rating < 1 || rating > 10)) {
+  if (rating !== undefined && rating !== null && (rating < 0 || rating > 10)) {
     return c.json({
       data: null,
-      error: { message: 'rating must be between 1 and 10', code: 'VALIDATION_ERROR' }
+      error: { message: 'rating must be between 0 and 10', code: 'VALIDATION_ERROR' }
     }, 400);
   }
 
@@ -117,10 +117,10 @@ logs.patch('/:id', async (c) => {
     values.push(body.end_date || null);
   }
   if (body.rating !== undefined) {
-    if (body.rating < 1 || body.rating > 10) {
+    if (body.rating < 0 || body.rating > 10) {
       return c.json({
         data: null,
-        error: { message: 'rating must be between 1 and 10', code: 'VALIDATION_ERROR' }
+        error: { message: 'rating must be between 0 and 10', code: 'VALIDATION_ERROR' }
       }, 400);
     }
     updates.push('rating = ?');

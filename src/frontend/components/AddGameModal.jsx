@@ -311,11 +311,11 @@ export default function AddGameModal({ onClose, onSave }) {
               {/* Rating */}
               <div className="mb-4">
                 <label className="block text-sm text-gray-300 mb-1">
-                  Rating (1-10)
+                  Rating (0-10)
                 </label>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
                   max="10"
                   value={rating}
                   onChange={(e) => setRating(e.target.value)}
