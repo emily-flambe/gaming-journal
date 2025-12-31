@@ -12,9 +12,10 @@ journal.use('*', authMiddleware);
 // Helper to verify game log ownership
 async function verifyLogOwnership(c: any, logId: string): Promise<GameLog | null> {
   const userId = c.get('userId');
-  return c.env.DB.prepare(
+  const result = await c.env.DB.prepare(
     'SELECT * FROM game_logs WHERE id = ? AND user_id = ?'
-  ).bind(logId, userId).first<GameLog>();
+  ).bind(logId, userId).first();
+  return result as GameLog | null;
 }
 
 // Helper to verify journal entry ownership (via game log)
@@ -25,14 +26,14 @@ async function verifyEntryOwnership(c: any, entryId: string): Promise<{ entry: J
     FROM journal_entries je
     JOIN game_logs gl ON je.game_log_id = gl.id
     WHERE je.id = ? AND gl.user_id = ?
-  `).bind(entryId, userId).first<JournalEntry & { log_user_id: string }>();
+  `).bind(entryId, userId).first() as (JournalEntry & { log_user_id: string }) | null;
 
   if (!result) return null;
 
   const { log_user_id, ...entry } = result;
   const log = await c.env.DB.prepare(
     'SELECT * FROM game_logs WHERE id = ?'
-  ).bind(entry.game_log_id).first<GameLog>();
+  ).bind(entry.game_log_id).first() as GameLog | null;
 
   return log ? { entry: entry as JournalEntry, log } : null;
 }

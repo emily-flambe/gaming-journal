@@ -92,7 +92,16 @@ export async function verifyGoogleIdToken(idToken: string, clientId: string): Pr
     throw new Error('Google ID token verification failed');
   }
 
-  const tokenInfo = await response.json();
+  const tokenInfo = await response.json() as {
+    aud: string;
+    sub: string;
+    email: string;
+    email_verified: string;
+    name?: string;
+    given_name?: string;
+    family_name?: string;
+    picture?: string;
+  };
 
   if (tokenInfo.aud !== clientId) {
     throw new Error('Google ID token audience mismatch');

@@ -406,9 +406,9 @@ export default function Timeline() {
           )}
         </div>
 
-        {/* Right: Detail Panel */}
-        <div className="w-96 border-l border-gray-700 bg-gray-800 overflow-y-auto">
-          {selectedLog ? (
+        {/* Right: Detail Panel - only shows when a game is selected */}
+        {selectedLog && (
+          <div className="w-96 border-l border-gray-700 bg-gray-800 overflow-y-auto flex-shrink-0">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1 min-w-0">
@@ -519,12 +519,8 @@ export default function Timeline() {
                 </>
               )}
             </div>
-          ) : (
-            <div className="p-6 text-center text-gray-500">
-              <p className="text-base">Select a game to view details</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {showAddModal && (
