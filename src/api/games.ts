@@ -16,6 +16,11 @@ interface RAWGGame {
   name: string;
   released: string | null;
   background_image: string | null;
+  metacritic: number | null;
+  website: string | null;
+  genres: Array<{ id: number; name: string; slug: string }> | null;
+  developers: Array<{ id: number; name: string; slug: string }> | null;
+  publishers: Array<{ id: number; name: string; slug: string }> | null;
 }
 
 interface RAWGSearchResponse {
@@ -57,22 +62,36 @@ games.get('/search', async (c) => {
     // Transform and cache results
     const results = await Promise.all(
       data.results.map(async (game) => {
+        const genres = game.genres ? JSON.stringify(game.genres.map(g => g.name)) : null;
+        const developers = game.developers ? JSON.stringify(game.developers.map(d => d.name)) : null;
+        const publishers = game.publishers ? JSON.stringify(game.publishers.map(p => p.name)) : null;
+
         // Cache the game
         await c.env.DB.prepare(`
-          INSERT INTO games (id, name, slug, cover_url, release_date)
-          VALUES (?, ?, ?, ?, ?)
+          INSERT INTO games (id, name, slug, cover_url, release_date, metacritic, website, genres, developers, publishers)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             slug = excluded.slug,
             cover_url = excluded.cover_url,
             release_date = excluded.release_date,
+            metacritic = COALESCE(excluded.metacritic, games.metacritic),
+            website = COALESCE(excluded.website, games.website),
+            genres = COALESCE(excluded.genres, games.genres),
+            developers = COALESCE(excluded.developers, games.developers),
+            publishers = COALESCE(excluded.publishers, games.publishers),
             fetched_at = unixepoch()
         `).bind(
           game.id,
           game.name,
           game.slug,
           game.background_image,
-          game.released
+          game.released,
+          game.metacritic,
+          game.website,
+          genres,
+          developers,
+          publishers
         ).run();
 
         return {
@@ -81,6 +100,8 @@ games.get('/search', async (c) => {
           slug: game.slug,
           cover_url: game.background_image,
           release_date: game.released,
+          metacritic: game.metacritic,
+          genres,
         };
       })
     );
@@ -138,22 +159,36 @@ games.get('/:id', async (c) => {
 
     const rawgGame: RAWGGame = await response.json();
 
+    const genres = rawgGame.genres ? JSON.stringify(rawgGame.genres.map(g => g.name)) : null;
+    const developers = rawgGame.developers ? JSON.stringify(rawgGame.developers.map(d => d.name)) : null;
+    const publishers = rawgGame.publishers ? JSON.stringify(rawgGame.publishers.map(p => p.name)) : null;
+
     // Cache the game
     await c.env.DB.prepare(`
-      INSERT INTO games (id, name, slug, cover_url, release_date)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO games (id, name, slug, cover_url, release_date, metacritic, website, genres, developers, publishers)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         slug = excluded.slug,
         cover_url = excluded.cover_url,
         release_date = excluded.release_date,
+        metacritic = excluded.metacritic,
+        website = excluded.website,
+        genres = excluded.genres,
+        developers = excluded.developers,
+        publishers = excluded.publishers,
         fetched_at = unixepoch()
     `).bind(
       rawgGame.id,
       rawgGame.name,
       rawgGame.slug,
       rawgGame.background_image,
-      rawgGame.released
+      rawgGame.released,
+      rawgGame.metacritic,
+      rawgGame.website,
+      genres,
+      developers,
+      publishers
     ).run();
 
     game = {
@@ -162,6 +197,11 @@ games.get('/:id', async (c) => {
       slug: rawgGame.slug,
       cover_url: rawgGame.background_image,
       release_date: rawgGame.released,
+      metacritic: rawgGame.metacritic,
+      website: rawgGame.website,
+      genres,
+      developers,
+      publishers,
       fetched_at: Math.floor(Date.now() / 1000),
     };
 

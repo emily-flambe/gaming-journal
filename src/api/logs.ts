@@ -18,6 +18,11 @@ logs.get('/', async (c) => {
     SELECT
       gl.*,
       g.cover_url,
+      g.metacritic,
+      g.website,
+      g.genres,
+      g.developers,
+      g.publishers,
       (SELECT COUNT(*) FROM journal_entries je WHERE je.game_log_id = gl.id) as journal_count
     FROM game_logs gl
     LEFT JOIN games g ON gl.game_id = g.id

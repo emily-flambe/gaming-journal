@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS games (
   slug TEXT,
   cover_url TEXT,
   release_date TEXT,             -- 'YYYY-MM-DD'
+  metacritic INTEGER,            -- Metacritic score 0-100
+  website TEXT,                  -- Official game website
+  genres TEXT,                   -- JSON array of genre names
+  developers TEXT,               -- JSON array of developer names
+  publishers TEXT,               -- JSON array of publisher names
   fetched_at INTEGER DEFAULT (unixepoch())
 );
 

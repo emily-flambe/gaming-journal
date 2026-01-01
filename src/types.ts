@@ -29,6 +29,11 @@ export interface Game {
   slug: string | null;
   cover_url: string | null;
   release_date: string | null;
+  metacritic: number | null;
+  website: string | null;
+  genres: string | null;      // JSON array of genre names
+  developers: string | null;  // JSON array of developer names
+  publishers: string | null;  // JSON array of publisher names
   fetched_at: number;
 }
 

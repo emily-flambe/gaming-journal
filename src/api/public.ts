@@ -28,7 +28,7 @@ publicTimeline.get('/:username', async (c) => {
     }, 403);
   }
 
-  // Fetch game logs with cover art
+  // Fetch game logs with cover art and metadata
   const logs = await c.env.DB.prepare(`
     SELECT
       gl.id,
@@ -39,7 +39,12 @@ publicTimeline.get('/:username', async (c) => {
       gl.rating,
       gl.notes,
       gl.sort_order,
-      g.cover_url
+      g.cover_url,
+      g.metacritic,
+      g.website,
+      g.genres,
+      g.developers,
+      g.publishers
     FROM game_logs gl
     LEFT JOIN games g ON gl.game_id = g.id
     WHERE gl.user_id = ?
@@ -95,7 +100,12 @@ publicTimeline.get('/:username/:logId', async (c) => {
       gl.rating,
       gl.notes,
       g.cover_url,
-      g.release_date
+      g.release_date,
+      g.metacritic,
+      g.website,
+      g.genres,
+      g.developers,
+      g.publishers
     FROM game_logs gl
     LEFT JOIN games g ON gl.game_id = g.id
     WHERE gl.id = ? AND gl.user_id = ?
