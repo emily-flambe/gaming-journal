@@ -326,6 +326,62 @@ export default function TimelineView({
               </div>
             ) : (
               <>
+                {/* Game metadata from RAWG */}
+                {(selectedLog.metacritic || selectedLog.genres || selectedLog.developers) && (
+                  <div className="mb-4 pb-4 border-b border-gray-700">
+                    {selectedLog.metacritic && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-gray-400 text-sm">Metacritic:</span>
+                        <span className={`px-2 py-0.5 rounded text-sm font-bold ${
+                          selectedLog.metacritic >= 75 ? 'bg-green-600' :
+                          selectedLog.metacritic >= 50 ? 'bg-yellow-600' : 'bg-red-600'
+                        }`}>
+                          {selectedLog.metacritic}
+                        </span>
+                      </div>
+                    )}
+                    {selectedLog.genres && (
+                      <div className="mb-2">
+                        <span className="text-gray-400 text-sm">Genres: </span>
+                        <span className="text-gray-300 text-sm">
+                          {JSON.parse(selectedLog.genres).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                    {selectedLog.developers && (
+                      <div className="mb-2">
+                        <span className="text-gray-400 text-sm">Developer: </span>
+                        <span className="text-gray-300 text-sm">
+                          {JSON.parse(selectedLog.developers).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                    {selectedLog.publishers && (
+                      <div className="mb-2">
+                        <span className="text-gray-400 text-sm">Publisher: </span>
+                        <span className="text-gray-300 text-sm">
+                          {JSON.parse(selectedLog.publishers).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                    {selectedLog.website && (
+                      <div>
+                        <a
+                          href={selectedLog.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-purple-400 hover:text-purple-300 text-sm inline-flex items-center gap-1"
+                        >
+                          Official Website
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-gray-300 leading-relaxed text-lg">
                   {selectedLog.notes || "No notes for this game."}
                 </p>
