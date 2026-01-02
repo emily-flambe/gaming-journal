@@ -8,9 +8,14 @@ on:
   workflow_dispatch:
   workflow_call:
 
+# Cancel in-progress runs when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint-and-typecheck:
-    name: Lint & Typecheck
+  build:
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -30,12 +35,108 @@ jobs:
       - name: Build frontend
         run: npm run build:frontend
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  preview-deploy:
+    name: Preview Deploy
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Deploy preview
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "Creating preview deployment for PR..."
+          OUTPUT=$(npx wrangler versions upload 2>&1)
+          echo "$OUTPUT"
+
+          # Extract the preview URL from the output
+          PREVIEW_URL=$(echo "$OUTPUT" | grep -oP 'Version Preview URL: \K.*' || echo "$OUTPUT" | grep "Version Preview URL:" | sed 's/.*Version Preview URL: //')
+
+          if [[ -z "$PREVIEW_URL" ]]; then
+            echo "Warning: Could not extract preview URL from wrangler output"
+            echo "Full output was:"
+            echo "$OUTPUT"
+          else
+            echo "Preview URL: $PREVIEW_URL"
+            echo "deployment_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment PR with preview URL
+        if: steps.deploy.outputs.deployment_url
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = '${{ steps.deploy.outputs.deployment_url }}';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `### 🚀 Preview Deployment Ready\n\nYour changes have been deployed to:\n\n**${previewUrl}**\n\n> **Note:** This preview uses the production database.\n\n_Tip: Cmd/Ctrl + Click to open in a new tab_`
+            });
+
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
       - name: Typecheck
         run: npx tsc --noEmit
 
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
+    needs: [build]
     timeout-minutes: 10
 
     steps:
@@ -51,8 +152,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build frontend
-        run: npm run build:frontend
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -80,15 +184,16 @@ jobs:
   ci-success:
     name: CI
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, e2e-tests]
+    needs: [build, lint-and-typecheck, e2e-tests]
     if: always()
     steps:
       - name: Check all jobs passed
         env:
+          BUILD_RESULT: ${{ needs.build.result }}
           LINT_RESULT: ${{ needs.lint-and-typecheck.result }}
           E2E_RESULT: ${{ needs.e2e-tests.result }}
         run: |
-          if [[ "$LINT_RESULT" != "success" || "$E2E_RESULT" != "success" ]]; then
+          if [[ "$BUILD_RESULT" != "success" || "$LINT_RESULT" != "success" || "$E2E_RESULT" != "success" ]]; then
             echo "One or more jobs failed"
             exit 1
           fi
