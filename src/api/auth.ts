@@ -111,10 +111,7 @@ auth.get('/google/callback', async (c) => {
     const secure = isSecureRequest(c);
     const cookie = createSessionCookie(token, secure);
 
-    // Redirect to settings if username looks auto-generated
-    const redirectUrl = (user.username.includes('-') && user.username.length < 20)
-      ? '/settings?setup=true'
-      : '/timeline';
+    const redirectUrl = '/timeline';
 
     return new Response(null, {
       status: 302,
