@@ -37,7 +37,12 @@ function generateUsername(email: string): string {
 // GET /api/auth/google - Initiate Google OAuth
 auth.get('/google', async (c) => {
   const stateManager = new OAuthStateManager(c.env.JWT_SECRET);
-  const state = await stateManager.createState('google');
+
+  // Capture the origin of this request to redirect back after OAuth
+  const requestUrl = new URL(c.req.url);
+  const returnOrigin = requestUrl.origin;
+
+  const state = await stateManager.createState('google', returnOrigin);
 
   const config: GoogleOAuthConfig = {
     clientId: c.env.GOOGLE_CLIENT_ID,
@@ -59,8 +64,9 @@ auth.get('/google/callback', async (c) => {
   }
 
   const stateManager = new OAuthStateManager(c.env.JWT_SECRET);
+  let stateData;
   try {
-    await stateManager.verifyState(state, 'google');
+    stateData = await stateManager.verifyState(state, 'google');
   } catch {
     return c.redirect('/login?error=invalid_state');
   }
@@ -107,19 +113,31 @@ auth.get('/google/callback', async (c) => {
     // Create session token
     const token = await createToken(user.id, c.env.JWT_SECRET);
 
-    // Set cookie and redirect
-    const secure = isSecureRequest(c);
-    const cookie = createSessionCookie(token, secure);
-
-    // Redirect to settings if username looks auto-generated
-    const redirectUrl = (user.username.includes('-') && user.username.length < 20)
+    // Determine the final redirect path
+    const finalPath = (user.username.includes('-') && user.username.length < 20)
       ? '/settings?setup=true'
       : '/timeline';
+
+    // Check if we need to redirect to a different origin (preview deployment)
+    const currentOrigin = new URL(c.req.url).origin;
+    const returnOrigin = stateData.returnOrigin;
+
+    if (returnOrigin && returnOrigin !== currentOrigin) {
+      // Redirect to the preview deployment with the token
+      const receiveUrl = new URL('/api/auth/receive', returnOrigin);
+      receiveUrl.searchParams.set('token', token);
+      receiveUrl.searchParams.set('redirect', finalPath);
+      return c.redirect(receiveUrl.toString());
+    }
+
+    // Same origin - set cookie directly
+    const secure = isSecureRequest(c);
+    const cookie = createSessionCookie(token, secure);
 
     return new Response(null, {
       status: 302,
       headers: {
-        'Location': redirectUrl,
+        'Location': finalPath,
         'Set-Cookie': cookie,
       },
     });
@@ -129,6 +147,34 @@ auth.get('/google/callback', async (c) => {
   }
 });
 
+
+// GET /api/auth/receive - Receive token from cross-origin OAuth callback
+// Used when OAuth callback happens on production but user initiated login from preview
+auth.get('/receive', async (c) => {
+  const token = c.req.query('token');
+  const redirect = c.req.query('redirect') || '/timeline';
+
+  if (!token) {
+    return c.redirect('/login?error=missing_token');
+  }
+
+  // Verify the token is valid before setting cookie
+  const payload = await verifyToken(token, c.env.JWT_SECRET);
+  if (!payload) {
+    return c.redirect('/login?error=invalid_token');
+  }
+
+  const secure = isSecureRequest(c);
+  const cookie = createSessionCookie(token, secure);
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      'Location': redirect,
+      'Set-Cookie': cookie,
+    },
+  });
+});
 
 // POST /api/auth/logout - Clear session
 auth.post('/logout', (c) => {

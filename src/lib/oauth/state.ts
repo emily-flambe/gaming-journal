@@ -3,6 +3,7 @@ import { SignJWT, jwtVerify } from 'jose';
 export interface OAuthState {
   provider: string;
   timestamp: number;
+  returnOrigin?: string;
 }
 
 export class OAuthStateManager {
@@ -12,13 +13,14 @@ export class OAuthStateManager {
     this.secret = new TextEncoder().encode(jwtSecret);
   }
 
-  async createState(provider: string): Promise<string> {
-    const payload = {
+  async createState(provider: string, returnOrigin?: string): Promise<string> {
+    const payload: OAuthState = {
       provider,
       timestamp: Date.now(),
+      returnOrigin,
     };
 
-    const jwt = await new SignJWT(payload)
+    const jwt = await new SignJWT(payload as unknown as Record<string, unknown>)
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('10m')
       .sign(this.secret);
