@@ -273,7 +273,18 @@ export default function TimelineView({
           className="fixed z-50 bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto"
           style={getModalPosition()}
         >
-            <div className="p-6">
+            {/* Cover image header */}
+            {selectedLog.cover_url && (
+              <div className="relative h-40 overflow-hidden rounded-t-xl">
+                <img
+                  src={selectedLog.cover_url}
+                  alt={selectedLog.game_name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-800 to-transparent" />
+              </div>
+            )}
+            <div className={selectedLog.cover_url ? "p-6 -mt-8 relative" : "p-6"}>
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-2xl font-bold">{selectedLog.game_name}</h3>
