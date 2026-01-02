@@ -4,7 +4,7 @@
   "description": "Personal gaming journal with timeline visualization",
   "type": "module",
   "scripts": {
-    "dev": "sh -c 'npm run build:frontend && wrangler dev --port ${1:-8787}' _",
+    "dev": "npm run build:frontend && wrangler dev",
     "deploy": "npm run build:frontend && wrangler deploy",
     "build:frontend": "vite build",
     "db:init": "wrangler d1 execute gaming-journal-db --local --file=./src/db/schema.sql",
