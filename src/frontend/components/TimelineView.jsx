@@ -23,8 +23,8 @@ export default function TimelineView({
     } else {
       const rect = e.currentTarget.getBoundingClientRect()
       setClickPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
+        gameLeft: rect.left,
+        gameRight: rect.right,
         gameTop: rect.top,
         gameBottom: rect.bottom,
       })
@@ -34,19 +34,31 @@ export default function TimelineView({
 
   function getModalPosition() {
     if (!clickPosition) return {}
-    const viewportHeight = window.innerHeight
+    const modalWidth = 450 // max-w-md is ~28rem = 448px
+    const modalHeight = 400
+    const gap = 24
     const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
 
-    // Position modal on opposite side horizontally
-    const isLeftHalf = clickPosition.x < viewportWidth / 2
-
-    // Check if game is in top or bottom half for vertical positioning
-    const isTopHalf = clickPosition.y < viewportHeight / 2
-
+    // Try right of game
+    if (clickPosition.gameRight + gap + modalWidth < viewportWidth) {
+      return {
+        left: `${clickPosition.gameRight + gap}px`,
+        top: `${Math.min(Math.max(8, clickPosition.gameTop), viewportHeight - modalHeight - 8)}px`,
+      }
+    }
+    // Try left of game
+    if (clickPosition.gameLeft - gap - modalWidth > 0) {
+      return {
+        left: `${clickPosition.gameLeft - gap - modalWidth}px`,
+        top: `${Math.min(Math.max(8, clickPosition.gameTop), viewportHeight - modalHeight - 8)}px`,
+      }
+    }
+    // Fall back to below game
+    const gameCenterX = (clickPosition.gameLeft + clickPosition.gameRight) / 2
     return {
-      ...(isLeftHalf ? { left: '55%' } : { right: '55%', left: 'auto' }),
-      ...(isTopHalf ? { top: '10%' } : { bottom: '10%', top: 'auto' }),
-      transform: isLeftHalf ? 'translateX(-50%)' : 'translateX(50%)',
+      left: `${Math.max(8, Math.min(gameCenterX - modalWidth / 2, viewportWidth - modalWidth - 8))}px`,
+      top: `${clickPosition.gameBottom + gap}px`,
     }
   }
 
@@ -257,17 +269,10 @@ export default function TimelineView({
     <div className="relative h-full">
       {/* Game Detail Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 z-50 p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => { setSelectedLog(null); setClickPosition(null); setIsEditing(false) }}
-          />
-          {/* Modal */}
-          <div
-            className="absolute bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto"
-            style={getModalPosition()}
-          >
+        <div
+          className="fixed z-50 bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto"
+          style={getModalPosition()}
+        >
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1 min-w-0">
@@ -434,7 +439,6 @@ export default function TimelineView({
                 </>
               )}
             </div>
-          </div>
         </div>
       )}
 
@@ -508,7 +512,7 @@ export default function TimelineView({
                         {showLineBefore && (
                           <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
                         )}
-                        <div className="h-10">
+                        <div className="min-h-14 py-1">
                           <button
                             draggable={editable}
                             onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}

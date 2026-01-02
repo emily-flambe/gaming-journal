@@ -43,6 +43,19 @@ git worktree prune             # Remove stale references
 - Deployment to Cloudflare happens automatically on merge to main
 - Never push directly to main
 
+## Visual Verification with Playwright
+
+**MANDATORY: Always use Playwright to visually verify UI changes before committing.**
+
+After making frontend changes:
+1. Start the dev server: `npm run dev`
+2. Use Playwright MCP tools to navigate to the affected pages
+3. Verify the UI looks and behaves correctly
+4. Test user interactions (clicks, forms, modals, etc.)
+5. Only commit after confirming changes work visually
+
+This is NOT optional. Running e2e tests is not sufficient - you must visually inspect changes using the browser.
+
 ## Timeline Components
 
 This project has TWO timeline components that must stay in sync:
