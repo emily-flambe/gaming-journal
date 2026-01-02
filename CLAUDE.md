@@ -32,10 +32,20 @@ git worktree prune             # Remove stale references
 - Any work that should go through a pull request
 - Before making changes that affect main
 
-### When NOT to Use Worktrees
+### When NOT to Use Worktrees (ONLY these three cases)
 - Quick fixes to existing PRs (stay in that worktree)
 - Read-only exploration or research
 - When explicitly told to work directly on main
+
+### NOT Valid Excuses to Skip Worktrees
+These rationalizations are WRONG. Create a worktree anyway:
+- "It's just a small change" - NO, use a worktree
+- "It's just updating a config file" - NO, use a worktree
+- "It's just replacing a favicon" - NO, use a worktree
+- "It's a one-line fix" - NO, use a worktree
+- "It's simple enough to do directly" - NO, use a worktree
+
+If you are about to modify ANY file on main, STOP and create a worktree first.
 
 ### Pull Request Workflow
 - All changes go through pull requests targeting main
