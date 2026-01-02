@@ -84,11 +84,11 @@ games.get('/search', async (c) => {
         `).bind(
           game.id,
           game.name,
-          game.slug,
-          game.background_image,
-          game.released,
-          game.metacritic,
-          game.website,
+          game.slug ?? null,
+          game.background_image ?? null,
+          game.released ?? null,
+          game.metacritic ?? null,
+          game.website ?? null,
           genres,
           developers,
           publishers
@@ -181,11 +181,11 @@ games.get('/:id', async (c) => {
     `).bind(
       rawgGame.id,
       rawgGame.name,
-      rawgGame.slug,
-      rawgGame.background_image,
-      rawgGame.released,
-      rawgGame.metacritic,
-      rawgGame.website,
+      rawgGame.slug ?? null,
+      rawgGame.background_image ?? null,
+      rawgGame.released ?? null,
+      rawgGame.metacritic ?? null,
+      rawgGame.website ?? null,
       genres,
       developers,
       publishers
