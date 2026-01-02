@@ -2,7 +2,7 @@
 
 ## Git Workflow
 
-**All feature work should use git worktrees.** This keeps main clean and enables parallel development.
+**MANDATORY: All feature work MUST use git worktrees.** Never make changes directly on main. Create a worktree BEFORE writing any code. This keeps main clean and enables parallel development.
 
 ### Creating a Worktree for New Features
 ```bash
@@ -11,6 +11,7 @@ git fetch origin
 git worktree add ../gaming-journal-feature-name -b feature-name origin/main
 cd ../gaming-journal-feature-name
 npm install
+cp ../gaming-journal/.dev.vars .  # Copy environment secrets (not in git)
 npx wrangler d1 execute gaming-journal-db --local --file=./src/db/schema.sql  # Initialize local DB
 
 # Do all work in the worktree, then create a PR

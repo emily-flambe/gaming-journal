@@ -7,6 +7,7 @@ export default function TimelineView({
   onLogUpdate
 }) {
   const [selectedLog, setSelectedLog] = useState(null)
+  const [clickPosition, setClickPosition] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState({})
   const [saving, setSaving] = useState(false)
@@ -14,6 +15,40 @@ export default function TimelineView({
   const [dropTarget, setDropTarget] = useState(null)
   const [dragRating, setDragRating] = useState(null)
   const timelineRef = useRef(null)
+
+  function handleGameClick(e, log, isSelected) {
+    if (isSelected) {
+      setSelectedLog(null)
+      setClickPosition(null)
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect()
+      setClickPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        gameTop: rect.top,
+        gameBottom: rect.bottom,
+      })
+      setSelectedLog(log)
+    }
+  }
+
+  function getModalPosition() {
+    if (!clickPosition) return {}
+    const viewportHeight = window.innerHeight
+    const viewportWidth = window.innerWidth
+
+    // Position modal on opposite side horizontally
+    const isLeftHalf = clickPosition.x < viewportWidth / 2
+
+    // Check if game is in top or bottom half for vertical positioning
+    const isTopHalf = clickPosition.y < viewportHeight / 2
+
+    return {
+      ...(isLeftHalf ? { left: '55%' } : { right: '55%', left: 'auto' }),
+      ...(isTopHalf ? { top: '10%' } : { bottom: '10%', top: 'auto' }),
+      transform: isLeftHalf ? 'translateX(-50%)' : 'translateX(50%)',
+    }
+  }
 
   function startEditing() {
     setEditValues({
@@ -219,185 +254,192 @@ export default function TimelineView({
   }
 
   return (
-    <div className="flex h-full">
-      {/* Left: Detail Panel - slides in when a game is selected */}
-      <div
-        className={`border-r border-gray-700 bg-gray-800 overflow-y-auto flex-shrink-0 transition-all duration-300 ease-in-out ${
-          selectedLog ? 'w-80 opacity-100' : 'w-0 opacity-0 border-r-0'
-        }`}
-      >
-        {selectedLog && (
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-2xl font-bold truncate">{selectedLog.game_name}</h3>
-                {!isEditing && (
-                  <p className="text-gray-400 text-base mt-1">
-                    {selectedLog.start_date && `Started: ${selectedLog.start_date}`}
-                    {selectedLog.start_date && selectedLog.end_date && ' • '}
-                    {selectedLog.end_date && `Finished: ${selectedLog.end_date}`}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 ml-2">
-                {!isEditing && selectedLog.rating !== undefined && selectedLog.rating !== null && (
-                  <span className={`px-3 py-1 rounded-full text-base font-bold ${getColor(selectedLog.rating)}`}>
-                    {selectedLog.rating}/10
-                  </span>
-                )}
-                {editable && !isEditing && (
+    <div className="relative h-full">
+      {/* Game Detail Modal */}
+      {selectedLog && (
+        <div className="fixed inset-0 z-50 p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => { setSelectedLog(null); setClickPosition(null); setIsEditing(false) }}
+          />
+          {/* Modal */}
+          <div
+            className="absolute bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto"
+            style={getModalPosition()}
+          >
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-2xl font-bold">{selectedLog.game_name}</h3>
+                  {!isEditing && (
+                    <p className="text-gray-400 text-base mt-1">
+                      {selectedLog.start_date && `Started: ${selectedLog.start_date}`}
+                      {selectedLog.start_date && selectedLog.end_date && ' • '}
+                      {selectedLog.end_date && `Finished: ${selectedLog.end_date}`}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-2">
+                  {!isEditing && selectedLog.rating !== undefined && selectedLog.rating !== null && (
+                    <span className={`px-3 py-1 rounded-full text-base font-bold ${getColor(selectedLog.rating)}`}>
+                      {selectedLog.rating}/10
+                    </span>
+                  )}
+                  {editable && !isEditing && (
+                    <button
+                      onClick={startEditing}
+                      className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  )}
                   <button
-                    onClick={startEditing}
-                    className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
-                    title="Edit"
+                    onClick={() => { setSelectedLog(null); setClickPosition(null); setIsEditing(false) }}
+                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                )}
-                <button
-                  onClick={() => { setSelectedLog(null); setIsEditing(false) }}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                </div>
               </div>
-            </div>
 
-            {isEditing ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={editValues.start_date}
-                    onChange={(e) => setEditValues({ ...editValues, start_date: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-base text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={editValues.end_date}
-                    onChange={(e) => setEditValues({ ...editValues, end_date: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-base text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Rating (0-10)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    value={editValues.rating}
-                    onChange={(e) => setEditValues({ ...editValues, rating: Math.min(10, Math.max(0, parseInt(e.target.value) || 0)) })}
-                    className="w-24 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-base text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Notes</label>
-                  <textarea
-                    value={editValues.notes}
-                    onChange={(e) => setEditValues({ ...editValues, notes: e.target.value })}
-                    rows={8}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-base text-white resize-y"
-                    placeholder="Your thoughts about this game..."
-                  />
-                </div>
-                <div className="flex gap-2 justify-end pt-2">
-                  <button
-                    onClick={cancelEditing}
-                    className="px-4 py-2 text-base text-gray-400 hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={saveEdit}
-                    disabled={saving}
-                    className="px-4 py-2 text-base bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded"
-                  >
-                    {saving ? 'Saving...' : 'Save'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Game metadata from RAWG */}
-                {(selectedLog.metacritic || selectedLog.genres || selectedLog.developers) && (
-                  <div className="mb-4 pb-4 border-b border-gray-700">
-                    {selectedLog.metacritic && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-gray-400 text-sm">Metacritic:</span>
-                        <span className={`px-2 py-0.5 rounded text-sm font-bold ${
-                          selectedLog.metacritic >= 75 ? 'bg-green-600' :
-                          selectedLog.metacritic >= 50 ? 'bg-yellow-600' : 'bg-red-600'
-                        }`}>
-                          {selectedLog.metacritic}
-                        </span>
-                      </div>
-                    )}
-                    {selectedLog.genres && (
-                      <div className="mb-2">
-                        <span className="text-gray-400 text-sm">Genres: </span>
-                        <span className="text-gray-300 text-sm">
-                          {JSON.parse(selectedLog.genres).join(', ')}
-                        </span>
-                      </div>
-                    )}
-                    {selectedLog.developers && (
-                      <div className="mb-2">
-                        <span className="text-gray-400 text-sm">Developer: </span>
-                        <span className="text-gray-300 text-sm">
-                          {JSON.parse(selectedLog.developers).join(', ')}
-                        </span>
-                      </div>
-                    )}
-                    {selectedLog.publishers && (
-                      <div className="mb-2">
-                        <span className="text-gray-400 text-sm">Publisher: </span>
-                        <span className="text-gray-300 text-sm">
-                          {JSON.parse(selectedLog.publishers).join(', ')}
-                        </span>
-                      </div>
-                    )}
-                    {selectedLog.website && (
-                      <div>
-                        <a
-                          href={selectedLog.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-purple-400 hover:text-purple-300 text-sm inline-flex items-center gap-1"
-                        >
-                          Official Website
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      </div>
-                    )}
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={editValues.start_date}
+                      onChange={(e) => setEditValues({ ...editValues, start_date: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-base text-white"
+                    />
                   </div>
-                )}
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={editValues.end_date}
+                      onChange={(e) => setEditValues({ ...editValues, end_date: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-base text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Rating (0-10)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={editValues.rating}
+                      onChange={(e) => setEditValues({ ...editValues, rating: Math.min(10, Math.max(0, parseInt(e.target.value) || 0)) })}
+                      className="w-24 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-base text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Notes</label>
+                    <textarea
+                      value={editValues.notes}
+                      onChange={(e) => setEditValues({ ...editValues, notes: e.target.value })}
+                      rows={8}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-base text-white resize-y"
+                      placeholder="Your thoughts about this game..."
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end pt-2">
+                    <button
+                      onClick={cancelEditing}
+                      className="px-4 py-2 text-base text-gray-400 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveEdit}
+                      disabled={saving}
+                      className="px-4 py-2 text-base bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded"
+                    >
+                      {saving ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Game metadata from RAWG */}
+                  {(selectedLog.metacritic || selectedLog.genres || selectedLog.developers) && (
+                    <div className="mb-4 pb-4 border-b border-gray-700">
+                      {selectedLog.metacritic && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-gray-400 text-sm">Metacritic:</span>
+                          <span className={`px-2 py-0.5 rounded text-sm font-bold ${
+                            selectedLog.metacritic >= 75 ? 'bg-green-600' :
+                            selectedLog.metacritic >= 50 ? 'bg-yellow-600' : 'bg-red-600'
+                          }`}>
+                            {selectedLog.metacritic}
+                          </span>
+                        </div>
+                      )}
+                      {selectedLog.genres && (
+                        <div className="mb-2">
+                          <span className="text-gray-400 text-sm">Genres: </span>
+                          <span className="text-gray-300 text-sm">
+                            {JSON.parse(selectedLog.genres).join(', ')}
+                          </span>
+                        </div>
+                      )}
+                      {selectedLog.developers && (
+                        <div className="mb-2">
+                          <span className="text-gray-400 text-sm">Developer: </span>
+                          <span className="text-gray-300 text-sm">
+                            {JSON.parse(selectedLog.developers).join(', ')}
+                          </span>
+                        </div>
+                      )}
+                      {selectedLog.publishers && (
+                        <div className="mb-2">
+                          <span className="text-gray-400 text-sm">Publisher: </span>
+                          <span className="text-gray-300 text-sm">
+                            {JSON.parse(selectedLog.publishers).join(', ')}
+                          </span>
+                        </div>
+                      )}
+                      {selectedLog.website && (
+                        <div>
+                          <a
+                            href={selectedLog.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-400 hover:text-purple-300 text-sm inline-flex items-center gap-1"
+                          >
+                            Official Website
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                <p className="text-gray-300 leading-relaxed text-lg">
-                  {selectedLog.notes || "No notes for this game."}
-                </p>
-                {selectedLog.journal_count > 0 && (
-                  <p className="text-purple-400 text-base mt-4">
-                    {selectedLog.journal_count} journal {selectedLog.journal_count === 1 ? 'entry' : 'entries'}
+                  <p className="text-gray-300 leading-relaxed text-lg">
+                    {selectedLog.notes || "No notes for this game."}
                   </p>
-                )}
-              </>
-            )}
+                  {selectedLog.journal_count > 0 && (
+                    <p className="text-purple-400 text-base mt-4">
+                      {selectedLog.journal_count} journal {selectedLog.journal_count === 1 ? 'entry' : 'entries'}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Right: Timeline */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      {/* Timeline */}
+      <div className="h-full overflow-y-auto px-4 py-6">
         <div>
           {/* Legend */}
           <div className="flex justify-center gap-4 mb-6 text-sm">
@@ -471,7 +513,7 @@ export default function TimelineView({
                             draggable={editable}
                             onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
                             onDragEnd={editable ? handleDragEnd : undefined}
-                            onClick={() => setSelectedLog(isSelected ? null : log)}
+                            onClick={(e) => handleGameClick(e, log, isSelected)}
                             className={`absolute px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
                               ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
                               ${isDragging ? 'opacity-50 scale-95' : ''}
