@@ -494,7 +494,7 @@ export default function TimelineView({
                   <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
                 </div>
 
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-3">
                   {logsByYear[year].map((log) => {
                     const left = getPosition(log.rating)
                     const isSelected = selectedLog?.id === log.id
@@ -512,20 +512,19 @@ export default function TimelineView({
                         {showLineBefore && (
                           <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
                         )}
-                        <div className="min-h-14 py-1">
+                        <div className="flex">
                           <button
                             draggable={editable}
                             onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
                             onDragEnd={editable ? handleDragEnd : undefined}
                             onClick={(e) => handleGameClick(e, log, isSelected)}
-                            className={`absolute px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
+                            className={`px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
                               ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
                               ${isDragging ? 'opacity-50 scale-95' : ''}
                               hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
                               ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
                             style={{
-                              left: `${left}%`,
-                              transform: 'translateX(-50%)',
+                              marginLeft: `calc(${left}% - 90px)`,
                             }}
                           >
                             {log.game_name}
