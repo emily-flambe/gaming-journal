@@ -1,5 +1,47 @@
 # Gaming Journal - Project Guidelines for Claude
 
+## Git Workflow
+
+**All feature work should use git worktrees.** This keeps main clean and enables parallel development.
+
+### Creating a Worktree for New Features
+```bash
+# From the main project directory
+git fetch origin
+git worktree add ../gaming-journal-feature-name -b feature-name origin/main
+cd ../gaming-journal-feature-name
+npm install
+npx wrangler d1 execute gaming-journal-db --local --file=./src/db/schema.sql  # Initialize local DB
+
+# Do all work in the worktree, then create a PR
+# After merge, clean up:
+cd ../gaming-journal
+git worktree remove ../gaming-journal-feature-name
+```
+
+### Key Commands
+```bash
+git worktree list              # See all worktrees
+git worktree remove <path>     # Clean up when done
+git worktree prune             # Remove stale references
+```
+
+### When to Use Worktrees
+- Starting any new feature or bugfix
+- Any work that should go through a pull request
+- Before making changes that affect main
+
+### When NOT to Use Worktrees
+- Quick fixes to existing PRs (stay in that worktree)
+- Read-only exploration or research
+- When explicitly told to work directly on main
+
+### Pull Request Workflow
+- All changes go through pull requests targeting main
+- CI checks (lint, typecheck, e2e tests) must pass before merging
+- Deployment to Cloudflare happens automatically on merge to main
+- Never push directly to main
+
 ## Timeline Components
 
 This project has TWO timeline components that must stay in sync:
