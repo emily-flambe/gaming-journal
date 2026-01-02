@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import JournalView from './JournalView'
 
 export default function TimelineView({
   logs,
@@ -14,6 +15,7 @@ export default function TimelineView({
   const [draggedId, setDraggedId] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
   const [dragRating, setDragRating] = useState(null)
+  const [showJournal, setShowJournal] = useState(false)
   const timelineRef = useRef(null)
 
   function handleGameClick(e, log, isSelected) {
@@ -303,15 +305,26 @@ export default function TimelineView({
                     </span>
                   )}
                   {editable && !isEditing && (
-                    <button
-                      onClick={startEditing}
-                      className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
-                      title="Edit"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setShowJournal(true)}
+                        className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Journal"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={startEditing}
+                        className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => { setSelectedLog(null); setClickPosition(null); setIsEditing(false) }}
@@ -553,6 +566,14 @@ export default function TimelineView({
           </div>
         </div>
       </div>
+
+      {/* Journal View Modal */}
+      {showJournal && selectedLog && (
+        <JournalView
+          gameLog={selectedLog}
+          onClose={() => setShowJournal(false)}
+        />
+      )}
     </div>
   )
 }
