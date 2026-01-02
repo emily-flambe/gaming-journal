@@ -19,6 +19,24 @@ This project has TWO timeline components that must stay in sync:
 - Rating 0 is valid and must not be treated as falsy
 - Use `rating !== null && rating !== undefined` instead of `if (rating)`
 
+## D1 Database Schema
+
+The schema is defined in `src/db/schema.sql`. Local and remote D1 databases must stay in sync.
+
+**When modifying the schema:**
+1. Update `src/db/schema.sql` with the new schema
+2. Apply changes to BOTH local and remote databases:
+   ```bash
+   # Local
+   npx wrangler d1 execute gaming-journal-db --local --command "ALTER TABLE ..."
+
+   # Remote (production)
+   npx wrangler d1 execute gaming-journal-db --remote --command "ALTER TABLE ..."
+   ```
+3. Never assume a migration applied to one has been applied to the other
+
+**Common pitfall:** Adding columns to the schema file doesn't automatically migrate existing databases. You must run ALTER TABLE commands on both local and remote.
+
 ## Deployment
 
 - Deploy with `npm run deploy` (builds frontend then deploys to Cloudflare Workers)
