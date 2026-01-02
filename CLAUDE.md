@@ -2,7 +2,7 @@
 
 ## Git Workflow
 
-**All feature work should use git worktrees.** This keeps main clean and enables parallel development.
+**MANDATORY: All feature work MUST use git worktrees.** Never make changes directly on main. Create a worktree BEFORE writing any code. This keeps main clean and enables parallel development.
 
 ### Creating a Worktree for New Features
 ```bash
@@ -11,6 +11,7 @@ git fetch origin
 git worktree add ../gaming-journal-feature-name -b feature-name origin/main
 cd ../gaming-journal-feature-name
 npm install
+cp ../gaming-journal/.dev.vars .  # Copy environment secrets (not in git)
 npx wrangler d1 execute gaming-journal-db --local --file=./src/db/schema.sql  # Initialize local DB
 
 # Do all work in the worktree, then create a PR
@@ -41,6 +42,19 @@ git worktree prune             # Remove stale references
 - CI checks (lint, typecheck, e2e tests) must pass before merging
 - Deployment to Cloudflare happens automatically on merge to main
 - Never push directly to main
+
+## Visual Verification with Playwright
+
+**MANDATORY: Always use Playwright to visually verify UI changes before committing.**
+
+After making frontend changes:
+1. Start the dev server: `npm run dev`
+2. Use Playwright MCP tools to navigate to the affected pages
+3. Verify the UI looks and behaves correctly
+4. Test user interactions (clicks, forms, modals, etc.)
+5. Only commit after confirming changes work visually
+
+This is NOT optional. Running e2e tests is not sufficient - you must visually inspect changes using the browser.
 
 ## Timeline Components
 
