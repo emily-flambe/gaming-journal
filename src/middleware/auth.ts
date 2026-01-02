@@ -50,6 +50,20 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
   await next();
 }
 
+// Admin-only middleware - must be used after authMiddleware
+export async function adminMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
+  const user = c.get('user');
+
+  if (!user || !user.is_admin) {
+    return c.json({
+      data: null,
+      error: { message: 'Admin access required', code: 'FORBIDDEN' }
+    }, 403);
+  }
+
+  await next();
+}
+
 // Optional auth - doesn't fail if not authenticated
 export async function optionalAuthMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
   const cookieHeader = c.req.header('Cookie');

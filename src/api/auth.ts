@@ -7,6 +7,7 @@ import {
   createSessionCookie,
   clearSessionCookie,
   getSessionFromCookie,
+  getAdminSessionFromCookie,
   verifyToken,
 } from '../lib/auth';
 import {
@@ -156,7 +157,7 @@ auth.get('/me', async (c) => {
   }
 
   const user = await c.env.DB.prepare(
-    'SELECT id, username, email, display_name, avatar_url, is_public, created_at FROM users WHERE id = ?'
+    'SELECT id, username, email, display_name, avatar_url, is_public, is_admin, created_at FROM users WHERE id = ?'
   ).bind(payload.userId).first();
 
   if (!user) {
@@ -166,7 +167,11 @@ auth.get('/me', async (c) => {
     }, 401);
   }
 
-  return c.json({ data: user, error: null });
+  // Check if admin is impersonating (admin_session cookie exists)
+  const adminToken = getAdminSessionFromCookie(cookieHeader);
+  const isImpersonating = !!adminToken;
+
+  return c.json({ data: { ...user, is_impersonating: isImpersonating }, error: null });
 });
 
 export default auth;

@@ -118,3 +118,29 @@ export function getSessionFromCookie(cookieHeader: string | undefined): string |
   // Use substring to handle tokens with '=' characters (Base64 padding)
   return sessionCookie.substring('session='.length) || null;
 }
+
+// Admin session cookie helpers (for impersonation)
+export function createAdminSessionCookie(token: string, isSecure: boolean = true): string {
+  const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
+  const parts = [`admin_session=${token}`, 'HttpOnly', 'SameSite=Lax', 'Path=/', `Max-Age=${maxAge}`];
+  if (isSecure) {
+    parts.push('Secure');
+  }
+  return parts.join('; ');
+}
+
+export function clearAdminSessionCookie(isSecure: boolean = true): string {
+  const parts = ['admin_session=', 'HttpOnly', 'SameSite=Lax', 'Path=/', 'Max-Age=0'];
+  if (isSecure) {
+    parts.push('Secure');
+  }
+  return parts.join('; ');
+}
+
+export function getAdminSessionFromCookie(cookieHeader: string | undefined): string | null {
+  if (!cookieHeader) return null;
+  const cookies = cookieHeader.split(';').map(c => c.trim());
+  const adminCookie = cookies.find(c => c.startsWith('admin_session='));
+  if (!adminCookie) return null;
+  return adminCookie.substring('admin_session='.length) || null;
+}

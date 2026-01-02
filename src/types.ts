@@ -18,6 +18,7 @@ export interface User {
   avatar_url: string | null;
   google_id: string | null;
   is_public: boolean;
+  is_admin: boolean;
   created_at: number;
   updated_at: number;
 }

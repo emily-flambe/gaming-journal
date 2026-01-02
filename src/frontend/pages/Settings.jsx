@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../App'
 
 export default function Settings() {
-  const { user, checkAuth } = useAuth()
+  const { user, checkAuth, isAdmin } = useAuth()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -13,9 +13,53 @@ export default function Settings() {
   const [displayName, setDisplayName] = useState('')
   const [isPublic, setIsPublic] = useState(false)
 
+  // Admin impersonation state
+  const [allUsers, setAllUsers] = useState([])
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const [impersonating, setImpersonating] = useState(false)
+
   useEffect(() => {
     fetchProfile()
   }, [])
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAllUsers()
+    }
+  }, [isAdmin])
+
+  async function fetchAllUsers() {
+    try {
+      const res = await fetch('/api/admin/users', { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        setAllUsers(data.data || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch users:', err)
+    }
+  }
+
+  async function handleImpersonate() {
+    if (!selectedUserId) return
+    setImpersonating(true)
+    try {
+      const res = await fetch(`/api/admin/impersonate/${selectedUserId}`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (res.ok) {
+        window.location.reload()
+      } else {
+        const data = await res.json()
+        setMessage({ type: 'error', text: data.error?.message || 'Failed to impersonate' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to impersonate user' })
+    } finally {
+      setImpersonating(false)
+    }
+  }
 
   async function fetchProfile() {
     try {
@@ -181,6 +225,45 @@ export default function Settings() {
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </form>
+
+        {/* Admin Section */}
+        {isAdmin && (
+          <div className="mt-12 pt-8 border-t border-gray-700">
+            <h2 className="text-lg font-bold text-amber-400 mb-4">Admin Tools</h2>
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Impersonate User
+              </label>
+              <div className="flex gap-2">
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="flex-1 px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                >
+                  <option value="">Select a user...</option>
+                  {allUsers
+                    .filter((u) => u.id !== user?.id)
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.display_name || u.username} ({u.email})
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleImpersonate}
+                  disabled={!selectedUserId || impersonating}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                >
+                  {impersonating ? 'Loading...' : 'Impersonate'}
+                </button>
+              </div>
+              <p className="text-gray-500 text-xs mt-2">
+                You will be logged in as this user with full access to their account.
+              </p>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
