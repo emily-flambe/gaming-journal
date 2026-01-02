@@ -8,15 +8,15 @@ export default function ImpersonationBanner() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-black px-4 py-2 flex items-center justify-center gap-4 text-sm font-medium">
+    <div className="fixed top-2 left-2 z-[100] bg-amber-500 text-black px-3 py-1.5 rounded-lg flex items-center gap-3 text-sm font-medium shadow-lg">
       <span>
         Viewing as: <strong>{user?.display_name || user?.username}</strong>
       </span>
       <button
         onClick={stopImpersonating}
-        className="bg-black text-amber-500 px-3 py-1 rounded text-xs font-bold hover:bg-gray-900 transition-colors"
+        className="bg-black text-amber-500 px-2 py-0.5 rounded text-xs font-bold hover:bg-gray-900 transition-colors"
       >
-        Stop Impersonating
+        Stop
       </button>
     </div>
   )
