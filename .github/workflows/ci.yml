@@ -6,11 +6,15 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-  workflow_call:
+
+# Cancel in-progress runs when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-and-typecheck:
-    name: Lint & Typecheck
+  build:
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -30,12 +34,45 @@ jobs:
       - name: Build frontend
         run: npm run build:frontend
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
       - name: Typecheck
         run: npx tsc --noEmit
 
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
+    needs: [build]
     timeout-minutes: 10
 
     steps:
@@ -51,8 +88,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build frontend
-        run: npm run build:frontend
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -80,15 +120,16 @@ jobs:
   ci-success:
     name: CI
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, e2e-tests]
+    needs: [build, lint-and-typecheck, e2e-tests]
     if: always()
     steps:
       - name: Check all jobs passed
         env:
+          BUILD_RESULT: ${{ needs.build.result }}
           LINT_RESULT: ${{ needs.lint-and-typecheck.result }}
           E2E_RESULT: ${{ needs.e2e-tests.result }}
         run: |
-          if [[ "$LINT_RESULT" != "success" || "$E2E_RESULT" != "success" ]]; then
+          if [[ "$BUILD_RESULT" != "success" || "$LINT_RESULT" != "success" || "$E2E_RESULT" != "success" ]]; then
             echo "One or more jobs failed"
             exit 1
           fi
