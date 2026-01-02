@@ -10,6 +10,7 @@
 git fetch origin
 git worktree add ../gaming-journal-feature-name -b feature-name origin/main
 cd ../gaming-journal-feature-name
+cp ../gaming-journal/.dev.vars .  # Copy environment secrets (not in git)
 npm install
 cp ../gaming-journal/.dev.vars .  # Copy environment secrets (not in git)
 npx wrangler d1 execute gaming-journal-db --local --file=./src/db/schema.sql  # Initialize local DB

@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Timeline from './pages/Timeline'
 import Settings from './pages/Settings'
 import PublicTimeline from './pages/PublicTimeline'
+import ImpersonationBanner from './components/ImpersonationBanner'
 
 const AuthContext = createContext(null)
 
@@ -43,8 +44,25 @@ function AuthProvider({ children }) {
     }
   }
 
+  async function stopImpersonating() {
+    try {
+      const res = await fetch('/api/admin/stop-impersonation', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      if (res.ok) {
+        window.location.reload()
+      }
+    } catch (err) {
+      console.error('Stop impersonation failed:', err)
+    }
+  }
+
+  const isAdmin = Boolean(user?.is_admin)
+  const isImpersonating = Boolean(user?.is_impersonating)
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, loading, logout, checkAuth, isAdmin, isImpersonating, stopImpersonating }}>
       {children}
     </AuthContext.Provider>
   )
@@ -72,6 +90,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ImpersonationBanner />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />

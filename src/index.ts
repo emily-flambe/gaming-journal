@@ -9,6 +9,7 @@ import journal from './api/journal';
 import games from './api/games';
 import profile from './api/profile';
 import publicTimeline from './api/public';
+import admin from './api/admin';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -34,6 +35,7 @@ app.route('/api/journal', journal);
 app.route('/api/games', games);
 app.route('/api/profile', profile);
 app.route('/api/u', publicTimeline);
+app.route('/api/admin', admin);
 
 // 404 handler for API routes
 app.notFound(async (c) => {

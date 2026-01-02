@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url TEXT,
   google_id TEXT UNIQUE,
   is_public INTEGER DEFAULT 0,
+  is_admin INTEGER DEFAULT 0,
   created_at INTEGER DEFAULT (unixepoch()),
   updated_at INTEGER DEFAULT (unixepoch())
 );
