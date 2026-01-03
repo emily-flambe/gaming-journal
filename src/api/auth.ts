@@ -135,6 +135,47 @@ auth.post('/logout', (c) => {
   return c.json({ data: { success: true }, error: null });
 });
 
+// GET /api/auth/dev-login - Development-only login (bypasses OAuth)
+// Only available on localhost - returns 404 in production
+auth.get('/dev-login', async (c) => {
+  const url = new URL(c.req.url);
+  const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+
+  if (!isLocalhost) {
+    return c.json({
+      data: null,
+      error: { message: 'Not found', code: 'NOT_FOUND' }
+    }, 404);
+  }
+
+  // Find or create dev user
+  const devEmail = 'dev@localhost';
+  let user = await c.env.DB.prepare(
+    'SELECT * FROM users WHERE email = ?'
+  ).bind(devEmail).first<User>();
+
+  if (!user) {
+    const userId = generateId();
+    await c.env.DB.prepare(`
+      INSERT INTO users (id, username, email, display_name, is_public)
+      VALUES (?, ?, ?, ?, 1)
+    `).bind(userId, 'dev-user', devEmail, 'Dev User').run();
+    user = { id: userId, username: 'dev-user', email: devEmail } as User;
+  }
+
+  // Create session token
+  const token = await createToken(user.id, c.env.JWT_SECRET);
+  const cookie = createSessionCookie(token, false); // Not secure for localhost
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      'Location': '/timeline',
+      'Set-Cookie': cookie,
+    },
+  });
+});
+
 // GET /api/auth/me - Get current user
 auth.get('/me', async (c) => {
   const cookieHeader = c.req.header('Cookie');
