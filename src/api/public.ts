@@ -123,7 +123,7 @@ publicTimeline.get('/:username/journal/:slug', async (c) => {
   // Fetch journal entries with all fields
   const entries = await c.env.DB.prepare(
     'SELECT * FROM journal_entries WHERE game_log_id = ? ORDER BY created_at ASC'
-  ).bind(logId).all();
+  ).bind(log.id).all();
 
   // Get predictions for all entries
   const entryIds = entries.results.map((e: any) => e.id);
