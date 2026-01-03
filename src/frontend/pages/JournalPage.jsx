@@ -458,7 +458,7 @@ export default function JournalPage() {
       <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <Link to="/timeline" className="text-sm text-purple-400 hover:text-purple-300">← Back to Timeline</Link>
+            <Link to="/journals" className="text-sm text-purple-400 hover:text-purple-300">← Back to Journals</Link>
             <h1 className="text-xl font-bold">{gameLog.game_name}</h1>
           </div>
           {isOwner && (

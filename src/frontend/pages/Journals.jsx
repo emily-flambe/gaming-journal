@@ -157,9 +157,12 @@ export default function Journals() {
                     <div className="flex items-center gap-3">
                       <h3 className="font-medium text-white truncate">{log.game_name}</h3>
                       {log.rating !== null && log.rating !== undefined && (
-                        <span className={`px-2 py-0.5 rounded text-sm font-bold ${getColor(log.rating)} flex-shrink-0`}>
-                          {log.rating}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className="text-xs text-gray-400">Latest:</span>
+                          <span className={`px-2 py-0.5 rounded text-sm font-bold ${getColor(log.rating)}`}>
+                            {log.rating}
+                          </span>
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">

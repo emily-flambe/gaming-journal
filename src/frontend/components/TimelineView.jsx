@@ -580,7 +580,7 @@ export default function TimelineView({
                       }`}
                       style={{ left: `${pos}%` }}
                     >
-                      <span className={`absolute -top-6 left-1/2 -translate-x-1/2 text-sm ${
+                      <span className={`absolute -top-4 left-1/2 -translate-x-1/2 text-xs ${
                         isActive ? 'text-purple-400 font-bold' : 'text-gray-500'
                       }`}>
                         {r}
