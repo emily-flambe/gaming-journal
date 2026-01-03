@@ -64,30 +64,35 @@ export default function TimelineView({
   function getModalPosition() {
     if (!clickPosition) return {}
     const modalWidth = 450 // max-w-md is ~28rem = 448px
-    const modalHeight = 400
+    const maxModalHeight = window.innerHeight * 0.8 // 80vh
     const gap = 24
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
+    const minTop = 8
+    const maxTop = viewportHeight - maxModalHeight - 8
+
+    // Clamp top position to ensure modal fits in viewport
+    const clampTop = (top) => Math.max(minTop, Math.min(top, maxTop))
 
     // Try right of game
     if (clickPosition.gameRight + gap + modalWidth < viewportWidth) {
       return {
         left: `${clickPosition.gameRight + gap}px`,
-        top: `${Math.min(Math.max(8, clickPosition.gameTop), viewportHeight - modalHeight - 8)}px`,
+        top: `${clampTop(clickPosition.gameTop)}px`,
       }
     }
     // Try left of game
     if (clickPosition.gameLeft - gap - modalWidth > 0) {
       return {
         left: `${clickPosition.gameLeft - gap - modalWidth}px`,
-        top: `${Math.min(Math.max(8, clickPosition.gameTop), viewportHeight - modalHeight - 8)}px`,
+        top: `${clampTop(clickPosition.gameTop)}px`,
       }
     }
-    // Fall back to below game
+    // Fall back to centered horizontally, clamped vertically
     const gameCenterX = (clickPosition.gameLeft + clickPosition.gameRight) / 2
     return {
       left: `${Math.max(8, Math.min(gameCenterX - modalWidth / 2, viewportWidth - modalWidth - 8))}px`,
-      top: `${clickPosition.gameBottom + gap}px`,
+      top: `${clampTop(clickPosition.gameBottom + gap)}px`,
     }
   }
 
