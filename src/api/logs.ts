@@ -39,7 +39,7 @@ logs.get('/', async (c) => {
     params.push(`${year}-%`, `${year}-%`);
   }
 
-  query += ` ORDER BY COALESCE(gl.end_date, gl.start_date) DESC, gl.sort_order ASC`;
+  query += ` ORDER BY COALESCE(gl.end_date, gl.start_date) DESC, gl.sort_order DESC`;
 
   const result = await c.env.DB.prepare(query).bind(...params).all();
 
