@@ -86,6 +86,16 @@ export function generateId(): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Generate a URL-friendly slug from a string
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/['']/g, '')           // Remove apostrophes
+    .replace(/[^a-z0-9]+/g, '-')    // Replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, '')        // Trim leading/trailing hyphens
+    .replace(/-+/g, '-');           // Collapse multiple hyphens
+}
+
 // Generate a random state token for OAuth CSRF protection
 export function generateStateToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));

@@ -10,27 +10,28 @@ export default function PublicTimeline() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    async function fetchTimeline() {
+      try {
+        const res = await fetch(`/api/u/${username}`)
+        if (res.ok) {
+          const data = await res.json()
+          setProfile(data.data?.user)
+          setLogs(data.data?.logs || [])
+        } else if (res.status === 404) {
+          setError('User not found')
+        } else if (res.status === 403) {
+          setError('private')
+        } else {
+          setError('Failed to load timeline')
+        }
+      } catch {
+        setError('Failed to load timeline')
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchTimeline()
   }, [username])
-
-  async function fetchTimeline() {
-    try {
-      const res = await fetch(`/api/u/${username}`)
-      if (res.ok) {
-        const data = await res.json()
-        setProfile(data.data?.user)
-        setLogs(data.data?.logs || [])
-      } else if (res.status === 404) {
-        setError('User not found')
-      } else {
-        setError('Failed to load timeline')
-      }
-    } catch (err) {
-      setError('Failed to load timeline')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -44,7 +45,14 @@ export default function PublicTimeline() {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">{error}</p>
+          {error === 'private' ? (
+            <>
+              <p className="text-gray-400 mb-2">This user's timeline is private.</p>
+              <p className="text-gray-500 text-sm mb-4">For now!</p>
+            </>
+          ) : (
+            <p className="text-gray-400 mb-4">{error}</p>
+          )}
           <Link
             to="/"
             className="text-purple-400 hover:underline"
@@ -75,6 +83,7 @@ export default function PublicTimeline() {
         <TimelineView
           logs={logs}
           editable={false}
+          username={username}
         />
       </div>
 

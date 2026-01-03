@@ -2,7 +2,7 @@
 import { Hono } from 'hono';
 import type { Env, GameLog } from '../types';
 import { authMiddleware } from '../middleware/auth';
-import { generateId } from '../lib/auth';
+import { generateId, generateSlug } from '../lib/auth';
 
 const logs = new Hono<{ Bindings: Env }>();
 
@@ -23,7 +23,11 @@ logs.get('/', async (c) => {
       g.genres,
       g.developers,
       g.publishers,
-      (SELECT COUNT(*) FROM journal_entries je WHERE je.game_log_id = gl.id) as journal_count
+      (SELECT COUNT(*) FROM journal_entries je WHERE je.game_log_id = gl.id) as journal_count,
+      (SELECT MAX(created_at) FROM journal_entries je WHERE je.game_log_id = gl.id) as latest_entry_at,
+      (SELECT json_group_array(json_object('rating', je.rating, 'created_at', je.created_at))
+       FROM journal_entries je WHERE je.game_log_id = gl.id AND je.rating IS NOT NULL
+       ORDER BY je.created_at ASC) as ratings_history
     FROM game_logs gl
     LEFT JOIN games g ON gl.game_id = g.id
     WHERE gl.user_id = ?
@@ -75,17 +79,47 @@ logs.post('/', async (c) => {
 
   const sortOrder = (maxOrder?.max_order ?? 0) + 1;
   const id = generateId();
+  const slug = generateSlug(game_name);
 
   await c.env.DB.prepare(`
-    INSERT INTO game_logs (id, user_id, game_id, game_name, start_date, end_date, rating, notes, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(id, userId, game_id || null, game_name, finalStartDate, finalEndDate, finalRating, notes || null, sortOrder).run();
+    INSERT INTO game_logs (id, user_id, game_id, game_name, slug, start_date, end_date, rating, notes, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(id, userId, game_id || null, game_name, slug, finalStartDate, finalEndDate, finalRating, notes || null, sortOrder).run();
 
   const log = await c.env.DB.prepare(
     'SELECT * FROM game_logs WHERE id = ?'
   ).bind(id).first();
 
   return c.json({ data: log, error: null }, 201);
+});
+
+// GET /api/logs/:id - Get single game log
+logs.get('/:id', async (c) => {
+  const userId = c.get('userId');
+  const logId = c.req.param('id');
+
+  const log = await c.env.DB.prepare(`
+    SELECT
+      gl.*,
+      g.cover_url,
+      g.metacritic,
+      g.website,
+      g.genres,
+      g.developers,
+      g.publishers
+    FROM game_logs gl
+    LEFT JOIN games g ON gl.game_id = g.id
+    WHERE gl.id = ? AND gl.user_id = ?
+  `).bind(logId, userId).first();
+
+  if (!log) {
+    return c.json({
+      data: null,
+      error: { message: 'Game log not found', code: 'NOT_FOUND' }
+    }, 404);
+  }
+
+  return c.json({ data: log, error: null });
 });
 
 // PATCH /api/logs/:id - Update game log
@@ -134,6 +168,10 @@ logs.patch('/:id', async (c) => {
   if (body.notes !== undefined) {
     updates.push('notes = ?');
     values.push(body.notes || null);
+  }
+  if (body.is_public !== undefined) {
+    updates.push('is_public = ?');
+    values.push(body.is_public ? 1 : 0);
   }
 
   if (updates.length === 0) {

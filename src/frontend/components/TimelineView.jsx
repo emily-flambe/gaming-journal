@@ -1,10 +1,13 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { RatingChart } from '../pages/JournalPage'
 
 export default function TimelineView({
   logs,
   editable = false,
   onLogsChange,
-  onLogUpdate
+  onLogUpdate,
+  username = null // For public timeline, to generate public journal URLs
 }) {
   const [selectedLog, setSelectedLog] = useState(null)
   const [clickPosition, setClickPosition] = useState(null)
@@ -14,7 +17,31 @@ export default function TimelineView({
   const [draggedId, setDraggedId] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
   const [dragRating, setDragRating] = useState(null)
+  const [journalEntries, setJournalEntries] = useState([])
   const timelineRef = useRef(null)
+
+  useEffect(() => {
+    if (selectedLog) {
+      // For public timeline with public journals, fetch from public API
+      if (!editable && username && selectedLog.is_public && selectedLog.slug) {
+        fetch(`/api/u/${username}/journal/${selectedLog.slug}`)
+          .then(res => res.ok ? res.json() : { data: { entries: [] } })
+          .then(data => setJournalEntries(data.data?.entries || []))
+          .catch(() => setJournalEntries([]))
+      } else if (editable) {
+        // For authenticated view
+        fetch(`/api/journal/logs/${selectedLog.id}`, { credentials: 'include' })
+          .then(res => res.ok ? res.json() : { data: [] })
+          .then(data => setJournalEntries(data.data || []))
+          .catch(() => setJournalEntries([]))
+      } else {
+        // Public timeline but private journal
+        setJournalEntries([])
+      }
+    } else {
+      setJournalEntries([])
+    }
+  }, [selectedLog?.id, editable, username])
 
   function handleGameClick(e, log, isSelected) {
     if (isSelected) {
@@ -246,7 +273,8 @@ export default function TimelineView({
     if (rating >= 9) return 'bg-emerald-500'
     if (rating >= 7) return 'bg-blue-500'
     if (rating >= 5) return 'bg-amber-500'
-    return 'bg-red-400'
+    if (rating >= 3) return 'bg-red-400'
+    return 'bg-gray-900'
   }
 
   const getBorderColor = (rating) => {
@@ -254,7 +282,8 @@ export default function TimelineView({
     if (rating >= 9) return 'border-emerald-400'
     if (rating >= 7) return 'border-blue-400'
     if (rating >= 5) return 'border-amber-400'
-    return 'border-red-300'
+    if (rating >= 3) return 'border-red-300'
+    return 'border-gray-600'
   }
 
   if (logs.length === 0) {
@@ -303,15 +332,37 @@ export default function TimelineView({
                     </span>
                   )}
                   {editable && !isEditing && (
-                    <button
-                      onClick={startEditing}
+                    <>
+                      <Link
+                        to={`/journal/${selectedLog.id}`}
+                        className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Journal"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </Link>
+                      <button
+                        onClick={startEditing}
+                        className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                  {!editable && username && selectedLog.is_public && selectedLog.slug && (
+                    <Link
+                      to={`/u/${username}/journal/${selectedLog.slug}`}
                       className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
-                      title="Edit"
+                      title="View Journal"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
-                    </button>
+                    </Link>
                   )}
                   <button
                     onClick={() => { setSelectedLog(null); setClickPosition(null); setIsEditing(false) }}
@@ -442,10 +493,32 @@ export default function TimelineView({
                   <p className="text-gray-300 leading-relaxed text-lg">
                     {selectedLog.notes || "No notes for this game."}
                   </p>
-                  {selectedLog.journal_count > 0 && (
-                    <p className="text-purple-400 text-base mt-4">
-                      {selectedLog.journal_count} journal {selectedLog.journal_count === 1 ? 'entry' : 'entries'}
-                    </p>
+
+                  {/* Mini rating chart */}
+                  {journalEntries.length >= 2 && (
+                    <div className="mt-4 pt-4 border-t border-gray-700">
+                      <RatingChart entries={journalEntries} mini={true} />
+                    </div>
+                  )}
+
+                  {/* Journal link - different for editable vs public view */}
+                  {editable && journalEntries.length > 0 && (
+                    <Link to={`/journal/${selectedLog.id}`} className="text-purple-400 hover:text-purple-300 text-base mt-4 inline-block">
+                      {journalEntries.length} journal {journalEntries.length === 1 ? 'entry' : 'entries'} →
+                    </Link>
+                  )}
+                  {!editable && username && selectedLog.is_public && selectedLog.slug && journalEntries.length > 0 && (
+                    <Link to={`/u/${username}/journal/${selectedLog.slug}`} className="text-purple-400 hover:text-purple-300 text-base mt-4 inline-block">
+                      {journalEntries.length} journal {journalEntries.length === 1 ? 'entry' : 'entries'} →
+                    </Link>
+                  )}
+                  {!editable && username && !selectedLog.is_public && (
+                    <div className="flex items-center gap-2 mt-4 text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span className="text-sm">This journal is private.</span>
+                    </div>
                   )}
                 </>
               )}
@@ -455,13 +528,24 @@ export default function TimelineView({
 
       {/* Timeline */}
       <div className="h-full overflow-y-auto px-4 py-6">
-        <div>
-          {/* Legend */}
-          <div className="flex justify-center gap-4 mb-6 text-sm">
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400"></span> Disliked (0-4)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Mixed (5-6)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500"></span> Liked (7-8)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Loved (9-10)</div>
+        <div className="max-w-[70%] mx-auto">
+          {/* Legend aligned with x-axis */}
+          <div className="relative h-8 mb-2">
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(1)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-gray-900 border border-gray-600 mr-1"></span>Hated
+            </div>
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(3.5)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-red-400 mr-1"></span>Disliked
+            </div>
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(5.5)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Mixed
+            </div>
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(7.5)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Liked
+            </div>
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(9.5)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Loved
+            </div>
           </div>
 
           {/* Timeline */}
@@ -471,6 +555,14 @@ export default function TimelineView({
             onDragOver={editable ? handleTimelineDragOver : undefined}
             onDrop={editable ? (e) => { if (draggedId && !dropTarget) handleDrop(e, null) } : undefined}
           >
+            {/* Boundary lines at 0 and 10 */}
+            <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: `${getPosition(0)}%` }}>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-500">0</span>
+            </div>
+            <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: `${getPosition(10)}%` }}>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-500">10</span>
+            </div>
+
             {/* Center line */}
             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-700 -translate-x-1/2"></div>
 
@@ -488,7 +580,7 @@ export default function TimelineView({
                       }`}
                       style={{ left: `${pos}%` }}
                     >
-                      <span className={`absolute -top-6 left-1/2 -translate-x-1/2 text-sm ${
+                      <span className={`absolute -top-4 left-1/2 -translate-x-1/2 text-xs ${
                         isActive ? 'text-purple-400 font-bold' : 'text-gray-500'
                       }`}>
                         {r}
@@ -523,19 +615,20 @@ export default function TimelineView({
                         {showLineBefore && (
                           <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
                         )}
-                        <div className="flex">
+                        <div className="relative">
                           <button
                             draggable={editable}
                             onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
                             onDragEnd={editable ? handleDragEnd : undefined}
                             onClick={(e) => handleGameClick(e, log, isSelected)}
-                            className={`px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
+                            className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
                               ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
                               ${isDragging ? 'opacity-50 scale-95' : ''}
                               hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
                               ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
                             style={{
-                              marginLeft: `calc(${left}% - 90px)`,
+                              left: `${left}%`,
+                              transform: 'translateX(-50%)',
                             }}
                           >
                             {log.game_name}
@@ -553,6 +646,7 @@ export default function TimelineView({
           </div>
         </div>
       </div>
+
     </div>
   )
 }

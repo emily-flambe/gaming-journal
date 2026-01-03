@@ -44,11 +44,13 @@ export interface GameLog {
   user_id: string;
   game_id: number | null;
   game_name: string;
+  slug: string | null;
   start_date: string | null;
   end_date: string | null;
   rating: number;
   notes: string | null;
   sort_order: number | null;
+  is_public: boolean;
   created_at: number;
   updated_at: number;
 }
@@ -57,7 +59,25 @@ export interface GameLog {
 export interface JournalEntry {
   id: string;
   game_log_id: string;
+  title: string | null;
   content: string;
+  progress: string | null;       // Where in the game (chapter, hours, etc.)
+  rating: number | null;         // 0-10 rating at this moment
+  created_at: number;
+  updated_at: number;
+}
+
+// Prediction model
+export type PredictionStatus = 'open' | 'correct' | 'incorrect' | 'partially_correct';
+
+export interface Prediction {
+  id: string;
+  journal_entry_id: string;
+  content: string;
+  status: PredictionStatus;
+  resolution_notes: string | null;
+  resolved_at: number | null;
+  resolved_in_entry_id: string | null;
   created_at: number;
   updated_at: number;
 }
