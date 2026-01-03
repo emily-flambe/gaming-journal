@@ -528,7 +528,7 @@ export default function TimelineView({
 
       {/* Timeline */}
       <div className="h-full overflow-y-auto px-4 py-6">
-        <div>
+        <div className="max-w-[70%] mx-auto">
           {/* Legend */}
           <div className="flex justify-center gap-4 mb-6 text-sm flex-wrap">
             <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-900 border border-gray-600"></span> Hated (0-2)</div>
