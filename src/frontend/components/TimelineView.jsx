@@ -258,7 +258,7 @@ export default function TimelineView({
   }, {})
 
   Object.keys(logsByYear).forEach(year => {
-    logsByYear[year].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    logsByYear[year].sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0))
   })
 
   const years = Object.keys(logsByYear).sort((a, b) => b - a)
