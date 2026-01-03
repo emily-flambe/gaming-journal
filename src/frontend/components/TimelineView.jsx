@@ -609,7 +609,7 @@ export default function TimelineView({
                               hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
                               ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
                             style={{
-                              left: `calc(${left}% - 50%)`,
+                              left: `${left}%`,
                               transform: 'translateX(-50%)',
                             }}
                           >
