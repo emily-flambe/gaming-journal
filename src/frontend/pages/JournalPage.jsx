@@ -413,54 +413,62 @@ export default function JournalPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6">
-        {/* Public sharing toggle */}
+        {/* Public sharing */}
         {isOwner && (
           <div className="mb-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            {gameLog.is_public ? (
+              <>
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm text-emerald-400 font-medium">Public</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={copyPublicUrl}
+                      className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                    >
+                      Copy Link
+                    </button>
+                    <a
+                      href={getPublicUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                    >
+                      View Public Page
+                    </a>
+                    <button
+                      onClick={togglePublic}
+                      disabled={togglingPublic}
+                      className="px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+                    >
+                      Make Private
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Anyone with the link can view this journal: <span className="text-gray-400">{getPublicUrl()}</span>
+                </p>
+              </>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span className="text-sm text-gray-400">Private</span>
+                </div>
                 <button
                   onClick={togglePublic}
                   disabled={togglingPublic}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    gameLog.is_public ? 'bg-purple-600' : 'bg-gray-600'
-                  } ${togglingPublic ? 'opacity-50' : ''}`}
+                  className="px-4 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors disabled:opacity-50"
                 >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      gameLog.is_public ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
+                  {togglingPublic ? 'Sharing...' : 'Share Publicly'}
                 </button>
-                <span className="text-sm text-gray-300">
-                  {gameLog.is_public ? 'Public journal' : 'Private journal'}
-                </span>
               </div>
-              {gameLog.is_public && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400 truncate max-w-[200px] hidden sm:inline">
-                    {getPublicUrl()}
-                  </span>
-                  <button
-                    onClick={copyPublicUrl}
-                    className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
-                  >
-                    Copy Link
-                  </button>
-                  <a
-                    href={getPublicUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
-                  >
-                    View
-                  </a>
-                </div>
-              )}
-            </div>
-            {gameLog.is_public && (
-              <p className="text-xs text-gray-500 mt-2">
-                Anyone with the link can view this journal and its entries.
-              </p>
             )}
           </div>
         )}
