@@ -529,13 +529,23 @@ export default function TimelineView({
       {/* Timeline */}
       <div className="h-full overflow-y-auto px-4 py-6">
         <div className="max-w-[70%] mx-auto">
-          {/* Legend */}
-          <div className="flex justify-center gap-4 mb-6 text-sm flex-wrap">
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-900 border border-gray-600"></span> Hated (0-2)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400"></span> Disliked (3-4)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Mixed (5-6)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500"></span> Liked (7-8)</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Loved (9-10)</div>
+          {/* Legend aligned with x-axis */}
+          <div className="relative h-8 mb-2">
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(1)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-gray-900 border border-gray-600 mr-1"></span>Hated
+            </div>
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(3.5)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-red-400 mr-1"></span>Disliked
+            </div>
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(5.5)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Mixed
+            </div>
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(7.5)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Liked
+            </div>
+            <div className="absolute text-xs text-gray-500" style={{ left: `${getPosition(9.5)}%`, transform: 'translateX(-50%)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Loved
+            </div>
           </div>
 
           {/* Timeline */}
@@ -545,6 +555,14 @@ export default function TimelineView({
             onDragOver={editable ? handleTimelineDragOver : undefined}
             onDrop={editable ? (e) => { if (draggedId && !dropTarget) handleDrop(e, null) } : undefined}
           >
+            {/* Boundary lines at 0 and 10 */}
+            <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: `${getPosition(0)}%` }}>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-500">0</span>
+            </div>
+            <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: `${getPosition(10)}%` }}>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-500">10</span>
+            </div>
+
             {/* Center line */}
             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-700 -translate-x-1/2"></div>
 
