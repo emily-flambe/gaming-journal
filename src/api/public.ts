@@ -34,6 +34,8 @@ publicTimeline.get('/:username', async (c) => {
       gl.id,
       gl.game_id,
       gl.game_name,
+      gl.slug,
+      gl.is_public,
       gl.start_date,
       gl.end_date,
       gl.rating,

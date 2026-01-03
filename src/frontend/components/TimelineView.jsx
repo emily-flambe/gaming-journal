@@ -6,7 +6,8 @@ export default function TimelineView({
   logs,
   editable = false,
   onLogsChange,
-  onLogUpdate
+  onLogUpdate,
+  username = null // For public timeline, to generate public journal URLs
 }) {
   const [selectedLog, setSelectedLog] = useState(null)
   const [clickPosition, setClickPosition] = useState(null)
@@ -21,14 +22,26 @@ export default function TimelineView({
 
   useEffect(() => {
     if (selectedLog) {
-      fetch(`/api/journal/logs/${selectedLog.id}`, { credentials: 'include' })
-        .then(res => res.ok ? res.json() : { data: [] })
-        .then(data => setJournalEntries(data.data || []))
-        .catch(() => setJournalEntries([]))
+      // For public timeline with public journals, fetch from public API
+      if (!editable && username && selectedLog.is_public && selectedLog.slug) {
+        fetch(`/api/u/${username}/journal/${selectedLog.slug}`)
+          .then(res => res.ok ? res.json() : { data: { entries: [] } })
+          .then(data => setJournalEntries(data.data?.entries || []))
+          .catch(() => setJournalEntries([]))
+      } else if (editable) {
+        // For authenticated view
+        fetch(`/api/journal/logs/${selectedLog.id}`, { credentials: 'include' })
+          .then(res => res.ok ? res.json() : { data: [] })
+          .then(data => setJournalEntries(data.data || []))
+          .catch(() => setJournalEntries([]))
+      } else {
+        // Public timeline but private journal
+        setJournalEntries([])
+      }
     } else {
       setJournalEntries([])
     }
-  }, [selectedLog?.id])
+  }, [selectedLog?.id, editable, username])
 
   function handleGameClick(e, log, isSelected) {
     if (isSelected) {
@@ -338,6 +351,17 @@ export default function TimelineView({
                       </button>
                     </>
                   )}
+                  {!editable && username && selectedLog.is_public && selectedLog.slug && (
+                    <Link
+                      to={`/u/${username}/journal/${selectedLog.slug}`}
+                      className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
+                      title="View Journal"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </Link>
+                  )}
                   <button
                     onClick={() => { setSelectedLog(null); setClickPosition(null); setIsEditing(false) }}
                     className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
@@ -475,10 +499,24 @@ export default function TimelineView({
                     </div>
                   )}
 
-                  {journalEntries.length > 0 && (
+                  {/* Journal link - different for editable vs public view */}
+                  {editable && journalEntries.length > 0 && (
                     <Link to={`/journal/${selectedLog.id}`} className="text-purple-400 hover:text-purple-300 text-base mt-4 inline-block">
                       {journalEntries.length} journal {journalEntries.length === 1 ? 'entry' : 'entries'} →
                     </Link>
+                  )}
+                  {!editable && username && selectedLog.is_public && selectedLog.slug && journalEntries.length > 0 && (
+                    <Link to={`/u/${username}/journal/${selectedLog.slug}`} className="text-purple-400 hover:text-purple-300 text-base mt-4 inline-block">
+                      {journalEntries.length} journal {journalEntries.length === 1 ? 'entry' : 'entries'} →
+                    </Link>
+                  )}
+                  {!editable && username && !selectedLog.is_public && (
+                    <div className="flex items-center gap-2 mt-4 text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span className="text-sm">This journal is private.</span>
+                    </div>
                   )}
                 </>
               )}
@@ -556,19 +594,20 @@ export default function TimelineView({
                         {showLineBefore && (
                           <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
                         )}
-                        <div className="flex">
+                        <div className="relative h-8">
                           <button
                             draggable={editable}
                             onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
                             onDragEnd={editable ? handleDragEnd : undefined}
                             onClick={(e) => handleGameClick(e, log, isSelected)}
-                            className={`px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
+                            className={`absolute px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
                               ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
                               ${isDragging ? 'opacity-50 scale-95' : ''}
-                              hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
+                              hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px] whitespace-nowrap
                               ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
                             style={{
-                              marginLeft: `calc(${left}% - 90px)`,
+                              left: `${left}%`,
+                              transform: 'translateX(-50%)',
                             }}
                           >
                             {log.game_name}

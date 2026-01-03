@@ -19,6 +19,8 @@ export default function PublicTimeline() {
           setLogs(data.data?.logs || [])
         } else if (res.status === 404) {
           setError('User not found')
+        } else if (res.status === 403) {
+          setError('private')
         } else {
           setError('Failed to load timeline')
         }
@@ -43,7 +45,14 @@ export default function PublicTimeline() {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">{error}</p>
+          {error === 'private' ? (
+            <>
+              <p className="text-gray-400 mb-2">This user's timeline is private.</p>
+              <p className="text-gray-500 text-sm mb-4">For now!</p>
+            </>
+          ) : (
+            <p className="text-gray-400 mb-4">{error}</p>
+          )}
           <Link
             to="/"
             className="text-purple-400 hover:underline"
@@ -74,6 +83,7 @@ export default function PublicTimeline() {
         <TimelineView
           logs={logs}
           editable={false}
+          username={username}
         />
       </div>
 

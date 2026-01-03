@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext'
 import JournalEntryForm from '../components/JournalEntryForm'
 
 function RatingChart({ entries, mini = false }) {
+  const [tooltip, setTooltip] = useState(null)
+
   const entriesWithRating = entries.filter(e => e.rating !== null && e.rating !== undefined)
   if (entriesWithRating.length < 2) return null
 
@@ -15,12 +17,28 @@ function RatingChart({ entries, mini = false }) {
   const chartWidth = width - padding.left - padding.right
   const chartHeight = height - padding.top - padding.bottom
 
-  const points = entriesWithRating.map((entry, index) => ({
-    x: padding.left + (index / (entriesWithRating.length - 1)) * chartWidth,
-    y: padding.top + chartHeight - (entry.rating / 10) * chartHeight,
-    rating: entry.rating,
-    title: entry.title || entry.progress || `Entry ${index + 1}`
-  }))
+  const formatDate = (timestamp) => new Date(timestamp * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+  // Calculate time range for proportional spacing
+  const timestamps = entriesWithRating.map(e => e.created_at)
+  const minTime = Math.min(...timestamps)
+  const maxTime = Math.max(...timestamps)
+  const timeRange = maxTime - minTime
+
+  const points = entriesWithRating.map((entry, index) => {
+    // Use proportional x position based on date, or equal spacing if all same date
+    const xRatio = timeRange > 0
+      ? (entry.created_at - minTime) / timeRange
+      : index / (entriesWithRating.length - 1)
+    return {
+      x: padding.left + xRatio * chartWidth,
+      y: padding.top + chartHeight - (entry.rating / 10) * chartHeight,
+      rating: entry.rating,
+      title: entry.title || `Entry ${index + 1}`,
+      progress: entry.progress,
+      date: formatDate(entry.created_at)
+    }
+  })
 
   const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
 
@@ -31,39 +49,71 @@ function RatingChart({ entries, mini = false }) {
     return '#f87171'
   }
 
+  const handleMouseEnter = (e, point) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const containerRect = e.currentTarget.closest('div').getBoundingClientRect()
+    setTooltip({
+      x: rect.left - containerRect.left + rect.width / 2,
+      y: rect.top - containerRect.top - 8,
+      text: `${point.date}${point.progress ? ` • ${point.progress}` : ''}: ${point.rating}/10`
+    })
+  }
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className={mini ? 'w-full max-w-[200px]' : 'w-full max-w-lg'}>
-      {!mini && [0, 5, 10].map(val => (
-        <text
-          key={val}
-          x={padding.left - 8}
-          y={padding.top + chartHeight - (val / 10) * chartHeight + 4}
-          className="fill-gray-500 text-xs"
-          textAnchor="end"
+    <div className="relative">
+      {tooltip && (
+        <div
+          className="absolute z-10 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap pointer-events-none"
+          style={{
+            left: tooltip.x,
+            top: tooltip.y,
+            transform: 'translate(-50%, -100%)'
+          }}
         >
-          {val}
-        </text>
-      ))}
-      {[0, 5, 10].map(val => (
-        <line
-          key={val}
-          x1={padding.left}
-          y1={padding.top + chartHeight - (val / 10) * chartHeight}
-          x2={width - padding.right}
-          y2={padding.top + chartHeight - (val / 10) * chartHeight}
-          stroke="#374151"
-          strokeWidth="1"
-          strokeDasharray={val === 5 ? '4,4' : '0'}
-        />
-      ))}
-      <path d={pathD} fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      {points.map((point, i) => (
-        <g key={i}>
-          <circle cx={point.x} cy={point.y} r={mini ? 4 : 6} fill={getColor(point.rating)} stroke="#1f2937" strokeWidth="2" />
-          <title>{`${point.title}: ${point.rating}/10`}</title>
-        </g>
-      ))}
-    </svg>
+          {tooltip.text}
+        </div>
+      )}
+      <svg viewBox={`0 0 ${width} ${height}`} className={mini ? 'w-full max-w-[200px]' : 'w-full max-w-lg'}>
+        {!mini && [0, 5, 10].map(val => (
+          <text
+            key={val}
+            x={padding.left - 8}
+            y={padding.top + chartHeight - (val / 10) * chartHeight + 4}
+            className="fill-gray-500 text-xs"
+            textAnchor="end"
+          >
+            {val}
+          </text>
+        ))}
+        {[0, 5, 10].map(val => (
+          <line
+            key={val}
+            x1={padding.left}
+            y1={padding.top + chartHeight - (val / 10) * chartHeight}
+            x2={width - padding.right}
+            y2={padding.top + chartHeight - (val / 10) * chartHeight}
+            stroke="#374151"
+            strokeWidth="1"
+            strokeDasharray={val === 5 ? '4,4' : '0'}
+          />
+        ))}
+        <path d={pathD} fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((point, i) => (
+          <circle
+            key={i}
+            cx={point.x}
+            cy={point.y}
+            r={mini ? 4 : 6}
+            fill={getColor(point.rating)}
+            stroke="#1f2937"
+            strokeWidth="2"
+            className="cursor-pointer"
+            onMouseEnter={(e) => handleMouseEnter(e, point)}
+            onMouseLeave={() => setTooltip(null)}
+          />
+        ))}
+      </svg>
+    </div>
   )
 }
 
@@ -86,17 +136,20 @@ function CollapsibleEntry({ entry, isExpanded, onToggle, onExpandUpTo, isOwner, 
         onClick={onToggle}
         className="w-full px-4 py-3 flex items-center gap-3 bg-gray-800 hover:bg-gray-750 transition-colors text-left"
       >
-        {entry.rating !== null && entry.rating !== undefined && (
-          <span className={`px-2 py-1 rounded text-sm font-bold ${getColor(entry.rating)} flex-shrink-0`}>
-            {entry.rating}
-          </span>
-        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">{formatDate(entry.created_at)}</span>
             {entry.progress && <span className="text-sm text-purple-400">• {entry.progress}</span>}
           </div>
           <h4 className="font-medium text-white truncate">{entry.title || 'Untitled Entry'}</h4>
+          {entry.rating !== null && entry.rating !== undefined && (
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-xs text-gray-400">Rating:</span>
+              <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${getColor(entry.rating)}`}>
+                {entry.rating}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {predictionCount > 0 && (
@@ -123,7 +176,7 @@ function CollapsibleEntry({ entry, isExpanded, onToggle, onExpandUpTo, isOwner, 
           {/* Show predictions without status (spoiler-free) */}
           {entry.predictions?.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-700">
-              <h5 className="text-sm font-medium text-purple-400 mb-2">Predictions made</h5>
+              <h5 className="text-sm font-medium text-purple-400 mb-2">Predictions</h5>
               <ul className="space-y-1">
                 {entry.predictions.map(pred => (
                   <li key={pred.id} className="text-sm text-gray-400 flex items-start gap-2">
@@ -206,6 +259,12 @@ function AllPredictionsSection({ entries, isOwner, onResolvePrediction }) {
           <span className="text-sm text-gray-400">
             {allPredictions.length} total • {openCount} open • {resolvedCount} resolved
           </span>
+          <span className="flex items-center gap-1 text-xs text-amber-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Spoilers ahead! Make good choices!!
+          </span>
         </div>
         <svg className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -214,8 +273,6 @@ function AllPredictionsSection({ entries, isOwner, onResolvePrediction }) {
 
       {isExpanded && (
         <div className="p-4 bg-gray-900/50 border-t border-gray-700 space-y-3">
-          <p className="text-xs text-amber-400 mb-4">⚠️ Spoiler warning: This section shows prediction outcomes</p>
-
           {allPredictions.map(pred => {
             const statusInfo = getStatusLabel(pred.status)
             return (
@@ -419,11 +476,20 @@ export default function JournalPage() {
             {gameLog.is_public ? (
               <>
                 <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-sm text-emerald-400 font-medium">Public</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm text-emerald-400 font-medium">Public</span>
+                    </div>
+                    <button
+                      onClick={togglePublic}
+                      disabled={togglingPublic}
+                      className="px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+                    >
+                      Make Private
+                    </button>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -440,17 +506,10 @@ export default function JournalPage() {
                     >
                       View Public Page
                     </a>
-                    <button
-                      onClick={togglePublic}
-                      disabled={togglingPublic}
-                      className="px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
-                    >
-                      Make Private
-                    </button>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Anyone with the link can view this journal: <span className="text-gray-400">{getPublicUrl()}</span>
+                  Anyone with the link can view this journal: <a href={getPublicUrl()} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">{getPublicUrl()}</a>
                 </p>
               </>
             ) : (
@@ -459,7 +518,7 @@ export default function JournalPage() {
                   <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  <span className="text-sm text-gray-400">Private</span>
+                  <span className="text-sm text-gray-400">This journal is private. Only you can see it.</span>
                 </div>
                 <button
                   onClick={togglePublic}
