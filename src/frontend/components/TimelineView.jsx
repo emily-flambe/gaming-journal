@@ -152,9 +152,9 @@ export default function TimelineView({
     }
   }
 
-  // Group logs by year (based on start_date) and sort by start_date DESC within each year
+  // Group logs by year (based on start_date, fallback to end_date) and sort by start_date DESC
   const logsByYear = logs.reduce((acc, log) => {
-    const date = log.start_date
+    const date = log.start_date || log.end_date
     if (!date) return acc
     const year = date.split('-')[0]
     if (!acc[year]) acc[year] = []
@@ -162,11 +162,11 @@ export default function TimelineView({
     return acc
   }, {})
 
-  // Sort by start_date DESC within each year (most recent first)
+  // Sort by start_date DESC within each year (most recent first), fallback to end_date
   Object.keys(logsByYear).forEach(year => {
     logsByYear[year].sort((a, b) => {
-      const dateA = a.start_date || ''
-      const dateB = b.start_date || ''
+      const dateA = a.start_date || a.end_date || ''
+      const dateB = b.start_date || b.end_date || ''
       return dateB.localeCompare(dateA)
     })
   })

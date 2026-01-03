@@ -35,11 +35,11 @@ logs.get('/', async (c) => {
   const params: any[] = [userId];
 
   if (year) {
-    query += ` AND gl.start_date LIKE ?`;
-    params.push(`${year}-%`);
+    query += ` AND (gl.start_date LIKE ? OR (gl.start_date IS NULL AND gl.end_date LIKE ?))`;
+    params.push(`${year}-%`, `${year}-%`);
   }
 
-  query += ` ORDER BY gl.start_date DESC`;
+  query += ` ORDER BY COALESCE(gl.start_date, gl.end_date) DESC`;
 
   const result = await c.env.DB.prepare(query).bind(...params).all();
 
