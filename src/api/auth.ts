@@ -136,19 +136,21 @@ auth.post('/logout', (c) => {
 });
 
 // GET /api/auth/dev-login - Development-only login (bypasses OAuth)
-// Only available on localhost - returns 404 in production
+// Only available in local development (http) - returns 404 in production (https)
 auth.get('/dev-login', async (c) => {
   const url = new URL(c.req.url);
-  const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  // In production on Cloudflare, requests are always HTTPS
+  // In local wrangler dev, requests are HTTP
+  const isLocalDev = url.protocol === 'http:';
 
-  if (!isLocalhost) {
+  if (!isLocalDev) {
     return c.json({
       data: null,
       error: { message: 'Not found', code: 'NOT_FOUND' }
     }, 404);
   }
 
-  // Find or create dev user
+  // Find or create dev user with seed data
   const devEmail = 'dev@localhost';
   let user = await c.env.DB.prepare(
     'SELECT * FROM users WHERE email = ?'
@@ -161,6 +163,46 @@ auth.get('/dev-login', async (c) => {
       VALUES (?, ?, ?, ?, 1)
     `).bind(userId, 'dev-user', devEmail, 'Dev User').run();
     user = { id: userId, username: 'dev-user', email: devEmail } as User;
+
+    // Seed with sample game log and journal entry
+    const gameLogId = generateId();
+    await c.env.DB.prepare(`
+      INSERT INTO game_logs (id, user_id, game_name, start_date, rating, notes, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      gameLogId,
+      userId,
+      'Final Fantasy XVI',
+      '2025-01',
+      8,
+      'Currently playing through the main story.',
+      0
+    ).run();
+
+    // Add initial journal entry
+    const entryId = generateId();
+    await c.env.DB.prepare(`
+      INSERT INTO journal_entries (id, game_log_id, title, content, progress, rating, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      entryId,
+      gameLogId,
+      'First Impressions',
+      'Just started playing. The combat system is really fun and the graphics are stunning. Clive seems like an interesting protagonist.',
+      'Prologue',
+      8,
+      Math.floor(new Date('2025-01-01').getTime() / 1000)
+    ).run();
+
+    // Add a prediction
+    await c.env.DB.prepare(`
+      INSERT INTO predictions (id, journal_entry_id, content)
+      VALUES (?, ?, ?)
+    `).bind(
+      generateId(),
+      entryId,
+      'I bet Joshua is still alive somehow'
+    ).run();
   }
 
   // Create session token
