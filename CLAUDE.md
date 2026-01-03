@@ -12,7 +12,6 @@ git worktree add ../gaming-journal-feature-name -b feature-name origin/main
 cd ../gaming-journal-feature-name
 cp ../gaming-journal/.dev.vars .  # Copy environment secrets (not in git)
 npm install
-cp ../gaming-journal/.dev.vars .  # Copy environment secrets (not in git)
 npx wrangler d1 execute gaming-journal-db --local --file=./src/db/schema.sql  # Initialize local DB
 
 # Do all work in the worktree, then create a PR
@@ -20,6 +19,8 @@ npx wrangler d1 execute gaming-journal-db --local --file=./src/db/schema.sql  # 
 cd ../gaming-journal
 git worktree remove ../gaming-journal-feature-name
 ```
+
+**IMPORTANT:** The `.dev.vars` file is gitignored and contains secrets (Google OAuth credentials, JWT secret, RAWG API key). Without it, the dev server won't work properly. Always copy it from the main project directory when creating a new worktree.
 
 ### Key Commands
 ```bash
