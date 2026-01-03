@@ -64,10 +64,10 @@ publicTimeline.get('/:username', async (c) => {
   });
 });
 
-// GET /api/u/:username/journal/:logId - Get public game log with journal entries
-publicTimeline.get('/:username/journal/:logId', async (c) => {
+// GET /api/u/:username/journal/:slug - Get public game log with journal entries
+publicTimeline.get('/:username/journal/:slug', async (c) => {
   const username = c.req.param('username').toLowerCase();
-  const logId = c.req.param('logId');
+  const slug = c.req.param('slug');
 
   // Find user by username
   const user = await c.env.DB.prepare(
@@ -81,12 +81,13 @@ publicTimeline.get('/:username/journal/:logId', async (c) => {
     }, 404);
   }
 
-  // Fetch the game log and check if it's public
+  // Fetch the game log and check if it's public (lookup by slug)
   const log = await c.env.DB.prepare(`
     SELECT
       gl.id,
       gl.game_id,
       gl.game_name,
+      gl.slug,
       gl.start_date,
       gl.end_date,
       gl.rating,
@@ -101,8 +102,8 @@ publicTimeline.get('/:username/journal/:logId', async (c) => {
       g.publishers
     FROM game_logs gl
     LEFT JOIN games g ON gl.game_id = g.id
-    WHERE gl.id = ? AND gl.user_id = ?
-  `).bind(logId, user.id).first<any>();
+    WHERE gl.slug = ? AND gl.user_id = ?
+  `).bind(slug, user.id).first<any>();
 
   if (!log) {
     return c.json({

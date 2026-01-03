@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS game_logs (
   user_id TEXT NOT NULL,
   game_id INTEGER,               -- FK to games, NULL if manual entry
   game_name TEXT NOT NULL,       -- Denormalized for display
+  slug TEXT,                     -- URL-friendly slug derived from game_name
   start_date TEXT,               -- 'YYYY-MM' format, optional
   end_date TEXT,                 -- 'YYYY-MM' format, optional
   rating INTEGER NOT NULL,       -- 1-10

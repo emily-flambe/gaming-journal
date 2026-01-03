@@ -158,7 +158,7 @@ function AllPredictionsSection({ entries }) {
 }
 
 export default function PublicJournalPage() {
-  const { username, logId } = useParams()
+  const { username, slug } = useParams()
   const [profile, setProfile] = useState(null)
   const [gameLog, setGameLog] = useState(null)
   const [entries, setEntries] = useState([])
@@ -168,11 +168,11 @@ export default function PublicJournalPage() {
 
   useEffect(() => {
     fetchJournal()
-  }, [username, logId])
+  }, [username, slug])
 
   async function fetchJournal() {
     try {
-      const res = await fetch(`/api/u/${username}/journal/${logId}`)
+      const res = await fetch(`/api/u/${username}/journal/${slug}`)
       if (res.ok) {
         const data = await res.json()
         setProfile(data.data?.user)
@@ -231,15 +231,14 @@ export default function PublicJournalPage() {
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold">
-            <Link to={`/u/${username}`} className="text-gray-400 hover:text-purple-400">
+          <p className="text-sm text-gray-400 mb-1">
+            <Link to={`/u/${username}`} className="hover:text-purple-400">
               {profile?.display_name || username}
             </Link>
-            <span className="text-gray-500 mx-2">/</span>
-            <span>{gameLog?.game_name}</span>
-          </h1>
+          </p>
+          <h1 className="text-2xl font-bold">{gameLog?.game_name}</h1>
           <p className="text-gray-400 text-sm mt-1">
-            {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+            {entries.length} journal {entries.length === 1 ? 'entry' : 'entries'}
             {gameLog?.start_date && ` • Started ${gameLog.start_date}`}
             {gameLog?.end_date && ` • Finished ${gameLog.end_date}`}
           </p>

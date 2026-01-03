@@ -373,7 +373,7 @@ export default function JournalPage() {
 
   function getPublicUrl() {
     const baseUrl = window.location.origin
-    return `${baseUrl}/u/${user.username}/journal/${logId}`
+    return `${baseUrl}/u/${user.username}/journal/${gameLog.slug}`
   }
 
   function copyPublicUrl() {

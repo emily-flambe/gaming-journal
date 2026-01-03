@@ -57,7 +57,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/u/:username" element={<PublicTimeline />} />
-          <Route path="/u/:username/journal/:logId" element={<PublicJournalPage />} />
+          <Route path="/u/:username/journal/:slug" element={<PublicJournalPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

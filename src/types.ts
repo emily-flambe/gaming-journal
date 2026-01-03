@@ -44,6 +44,7 @@ export interface GameLog {
   user_id: string;
   game_id: number | null;
   game_name: string;
+  slug: string | null;
   start_date: string | null;
   end_date: string | null;
   rating: number;

@@ -4,6 +4,7 @@ import type { Env, User } from '../types';
 import {
   createToken,
   generateId,
+  generateSlug,
   createSessionCookie,
   clearSessionCookie,
   getSessionFromCookie,
@@ -167,12 +168,13 @@ auth.get('/dev-login', async (c) => {
     // Seed with sample game log and journal entry
     const gameLogId = generateId();
     await c.env.DB.prepare(`
-      INSERT INTO game_logs (id, user_id, game_name, start_date, rating, notes, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO game_logs (id, user_id, game_name, slug, start_date, rating, notes, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       gameLogId,
       userId,
       'Final Fantasy XVI',
+      'final-fantasy-xvi',
       '2025-01',
       8,
       'Currently playing through the main story.',
@@ -222,12 +224,13 @@ auth.get('/dev-login', async (c) => {
     // Seed Clair Obscur: Expedition 33
     const gameLogId2 = generateId();
     await c.env.DB.prepare(`
-      INSERT INTO game_logs (id, user_id, game_name, start_date, rating, notes, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO game_logs (id, user_id, game_name, slug, start_date, rating, notes, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       gameLogId2,
       userId,
       'Clair Obscur: Expedition 33',
+      'clair-obscur-expedition-33',
       '2025-05',
       9,
       'Beautiful turn-based RPG with real-time elements.',
@@ -260,12 +263,13 @@ auth.get('/dev-login', async (c) => {
     // Seed Dispatch
     const gameLogId3 = generateId();
     await c.env.DB.prepare(`
-      INSERT INTO game_logs (id, user_id, game_name, start_date, rating, notes, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO game_logs (id, user_id, game_name, slug, start_date, rating, notes, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       gameLogId3,
       userId,
       'Dispatch',
+      'dispatch',
       '2025-12',
       7,
       'Interesting puzzle game with a unique communication mechanic.',

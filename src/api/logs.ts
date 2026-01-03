@@ -2,7 +2,7 @@
 import { Hono } from 'hono';
 import type { Env, GameLog } from '../types';
 import { authMiddleware } from '../middleware/auth';
-import { generateId } from '../lib/auth';
+import { generateId, generateSlug } from '../lib/auth';
 
 const logs = new Hono<{ Bindings: Env }>();
 
@@ -75,11 +75,12 @@ logs.post('/', async (c) => {
 
   const sortOrder = (maxOrder?.max_order ?? 0) + 1;
   const id = generateId();
+  const slug = generateSlug(game_name);
 
   await c.env.DB.prepare(`
-    INSERT INTO game_logs (id, user_id, game_id, game_name, start_date, end_date, rating, notes, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(id, userId, game_id || null, game_name, finalStartDate, finalEndDate, finalRating, notes || null, sortOrder).run();
+    INSERT INTO game_logs (id, user_id, game_id, game_name, slug, start_date, end_date, rating, notes, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(id, userId, game_id || null, game_name, slug, finalStartDate, finalEndDate, finalRating, notes || null, sortOrder).run();
 
   const log = await c.env.DB.prepare(
     'SELECT * FROM game_logs WHERE id = ?'
