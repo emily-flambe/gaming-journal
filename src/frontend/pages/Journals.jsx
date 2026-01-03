@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { RatingChart } from './JournalPage'
 
 export default function Journals() {
   const { user, logout } = useAuth()
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('recent') // recent, alphabetical, rating, entries
-  const [filterHasEntries, setFilterHasEntries] = useState(false)
 
   useEffect(() => {
     fetchLogs()
@@ -27,9 +27,7 @@ export default function Journals() {
     }
   }
 
-  const filteredLogs = logs.filter(log => !filterHasEntries || (log.journal_count > 0))
-
-  const sortedLogs = [...filteredLogs].sort((a, b) => {
+  const sortedLogs = [...logs].sort((a, b) => {
     switch (sortBy) {
       case 'alphabetical':
         return a.game_name.localeCompare(b.game_name)
@@ -45,15 +43,6 @@ export default function Journals() {
       }
     }
   })
-
-  const getColor = (rating) => {
-    if (rating === undefined || rating === null) return 'bg-gray-600'
-    if (rating >= 9) return 'bg-emerald-600'
-    if (rating >= 7) return 'bg-blue-600'
-    if (rating >= 5) return 'bg-amber-600'
-    if (rating >= 3) return 'bg-red-500'
-    return 'bg-gray-900'
-  }
 
   if (loading) {
     return (
@@ -99,19 +88,8 @@ export default function Journals() {
       <div className="flex-1 max-w-4xl mx-auto px-4 py-6 w-full">
         <h2 className="text-3xl font-bold text-center text-purple-400 mb-6">Journals</h2>
 
-        {/* Filters and sorting */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-gray-400">
-              <input
-                type="checkbox"
-                checked={filterHasEntries}
-                onChange={(e) => setFilterHasEntries(e.target.checked)}
-                className="rounded bg-gray-700 border-gray-600"
-              />
-              Only with entries
-            </label>
-          </div>
+        {/* Sorting */}
+        <div className="flex items-center justify-end mb-6">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">Sort by:</span>
             <select
@@ -130,9 +108,7 @@ export default function Journals() {
         {/* Games list */}
         {sortedLogs.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-400">
-              {filterHasEntries ? 'No games with journal entries yet.' : 'No games logged yet.'}
-            </p>
+            <p className="text-gray-400">No games logged yet.</p>
             <Link to="/timeline" className="text-purple-400 hover:text-purple-300 text-sm mt-2 inline-block">
               Go to timeline to add games
             </Link>
@@ -150,38 +126,32 @@ export default function Journals() {
                     <img
                       src={log.cover_url}
                       alt={log.game_name}
-                      className="w-16 h-16 object-cover rounded"
+                      className="w-16 h-16 object-cover rounded flex-shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-medium text-white truncate">{log.game_name}</h3>
-                      {log.rating !== null && log.rating !== undefined && (
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className="text-xs text-gray-400">Latest:</span>
-                          <span className={`px-2 py-0.5 rounded text-sm font-bold ${getColor(log.rating)}`}>
-                            {log.rating}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
-                      {log.start_date && <span>Started: {log.start_date}</span>}
-                      {log.end_date && <span>Finished: {log.end_date}</span>}
-                    </div>
-                    <div className="mt-2 text-sm">
-                      {log.journal_count > 0 ? (
-                        <span className="text-purple-400">
-                          {log.journal_count} journal {log.journal_count === 1 ? 'entry' : 'entries'}
-                        </span>
-                      ) : (
-                        <span className="text-gray-500">No journal entries yet</span>
-                      )}
+                    <h3 className="font-medium text-white truncate">{log.game_name}</h3>
+                    <div className="text-sm text-gray-400 mt-1">
+                      {log.start_date && <div>Started: {new Date(log.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+                      {log.latest_entry_at && <div>Updated: {new Date(log.latest_entry_at * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+                      <div className="text-purple-400">
+                        {log.journal_count > 0
+                          ? `${log.journal_count} ${log.journal_count === 1 ? 'entry' : 'entries'}`
+                          : 'No entries... yet!'}
+                      </div>
                     </div>
                   </div>
-                  <svg className="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  {(() => {
+                    const ratings = log.ratings_history ? JSON.parse(log.ratings_history) : []
+                    if (ratings.length >= 2) {
+                      return (
+                        <div className="w-48 flex-shrink-0">
+                          <RatingChart entries={ratings} mini={true} />
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
                 </div>
               </Link>
             ))}

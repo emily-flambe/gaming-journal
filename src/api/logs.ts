@@ -23,7 +23,11 @@ logs.get('/', async (c) => {
       g.genres,
       g.developers,
       g.publishers,
-      (SELECT COUNT(*) FROM journal_entries je WHERE je.game_log_id = gl.id) as journal_count
+      (SELECT COUNT(*) FROM journal_entries je WHERE je.game_log_id = gl.id) as journal_count,
+      (SELECT MAX(created_at) FROM journal_entries je WHERE je.game_log_id = gl.id) as latest_entry_at,
+      (SELECT json_group_array(json_object('rating', je.rating, 'created_at', je.created_at))
+       FROM journal_entries je WHERE je.game_log_id = gl.id AND je.rating IS NOT NULL
+       ORDER BY je.created_at ASC) as ratings_history
     FROM game_logs gl
     LEFT JOIN games g ON gl.game_id = g.id
     WHERE gl.user_id = ?

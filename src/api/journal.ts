@@ -167,9 +167,10 @@ journal.post('/logs/:logId', async (c) => {
   }
 
   // Parse entry_date or default to now
+  // Append T12:00:00 to avoid timezone issues when parsing date-only strings
   let createdAt: number;
   if (entry_date) {
-    createdAt = Math.floor(new Date(entry_date).getTime() / 1000);
+    createdAt = Math.floor(new Date(entry_date + 'T12:00:00').getTime() / 1000);
   } else {
     createdAt = Math.floor(Date.now() / 1000);
   }
@@ -273,7 +274,8 @@ journal.patch('/:id', async (c) => {
   }
 
   if (entry_date !== undefined) {
-    const createdAt = Math.floor(new Date(entry_date).getTime() / 1000);
+    // Append T12:00:00 to avoid timezone issues when parsing date-only strings
+    const createdAt = Math.floor(new Date(entry_date + 'T12:00:00').getTime() / 1000);
     updates.push('created_at = ?');
     params.push(createdAt);
   }
