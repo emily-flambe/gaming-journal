@@ -273,7 +273,8 @@ export default function TimelineView({
     if (rating >= 9) return 'bg-emerald-500'
     if (rating >= 7) return 'bg-blue-500'
     if (rating >= 5) return 'bg-amber-500'
-    return 'bg-red-400'
+    if (rating >= 3) return 'bg-red-400'
+    return 'bg-gray-900'
   }
 
   const getBorderColor = (rating) => {
@@ -281,7 +282,8 @@ export default function TimelineView({
     if (rating >= 9) return 'border-emerald-400'
     if (rating >= 7) return 'border-blue-400'
     if (rating >= 5) return 'border-amber-400'
-    return 'border-red-300'
+    if (rating >= 3) return 'border-red-300'
+    return 'border-gray-600'
   }
 
   if (logs.length === 0) {
@@ -528,8 +530,9 @@ export default function TimelineView({
       <div className="h-full overflow-y-auto px-4 py-6">
         <div>
           {/* Legend */}
-          <div className="flex justify-center gap-4 mb-6 text-sm">
-            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400"></span> Disliked (0-4)</div>
+          <div className="flex justify-center gap-4 mb-6 text-sm flex-wrap">
+            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-900 border border-gray-600"></span> Hated (0-2)</div>
+            <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-400"></span> Disliked (3-4)</div>
             <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Mixed (5-6)</div>
             <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500"></span> Liked (7-8)</div>
             <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Loved (9-10)</div>
@@ -594,19 +597,19 @@ export default function TimelineView({
                         {showLineBefore && (
                           <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
                         )}
-                        <div className="relative h-8">
+                        <div className="relative">
                           <button
                             draggable={editable}
                             onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
                             onDragEnd={editable ? handleDragEnd : undefined}
                             onClick={(e) => handleGameClick(e, log, isSelected)}
-                            className={`absolute px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
+                            className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
                               ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
                               ${isDragging ? 'opacity-50 scale-95' : ''}
-                              hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px] whitespace-nowrap
+                              hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
                               ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
                             style={{
-                              left: `${left}%`,
+                              left: `calc(${left}% - 50%)`,
                               transform: 'translateX(-50%)',
                             }}
                           >

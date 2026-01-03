@@ -51,7 +51,8 @@ export default function Journals() {
     if (rating >= 9) return 'bg-emerald-600'
     if (rating >= 7) return 'bg-blue-600'
     if (rating >= 5) return 'bg-amber-600'
-    return 'bg-red-500'
+    if (rating >= 3) return 'bg-red-500'
+    return 'bg-gray-900'
   }
 
   if (loading) {
@@ -96,6 +97,8 @@ export default function Journals() {
 
       {/* Main content */}
       <div className="flex-1 max-w-4xl mx-auto px-4 py-6 w-full">
+        <h2 className="text-3xl font-bold text-center text-purple-400 mb-6">Journals</h2>
+
         {/* Filters and sorting */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
