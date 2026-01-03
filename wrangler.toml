@@ -24,6 +24,10 @@ database_id = "d08f0a8a-996a-47d7-95fe-69e9ceac194e"
 [dev]
 port = 8787
 
+[observability]
+enabled = true
+head_sampling_rate = 1
+
 # Secrets (set via wrangler secret put):
 # JWT_SECRET
 # GOOGLE_CLIENT_ID
