@@ -231,14 +231,13 @@ export default function PublicJournalPage() {
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-            <Link to={`/u/${username}`} className="hover:text-purple-400">
-              {profile?.display_name || username}'s Timeline
+          <h1 className="text-2xl font-bold">
+            <Link to={`/u/${username}`} className="text-gray-400 hover:text-purple-400">
+              {profile?.display_name || username}
             </Link>
-            <span>/</span>
-            <span className="text-white">{gameLog?.game_name}</span>
-          </div>
-          <h1 className="text-2xl font-bold">{gameLog?.game_name} Journal</h1>
+            <span className="text-gray-500 mx-2">/</span>
+            <span>{gameLog?.game_name}</span>
+          </h1>
           <p className="text-gray-400 text-sm mt-1">
             {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
             {gameLog?.start_date && ` • Started ${gameLog.start_date}`}
