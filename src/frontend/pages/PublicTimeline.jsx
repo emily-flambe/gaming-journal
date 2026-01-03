@@ -10,27 +10,26 @@ export default function PublicTimeline() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    async function fetchTimeline() {
+      try {
+        const res = await fetch(`/api/u/${username}`)
+        if (res.ok) {
+          const data = await res.json()
+          setProfile(data.data?.user)
+          setLogs(data.data?.logs || [])
+        } else if (res.status === 404) {
+          setError('User not found')
+        } else {
+          setError('Failed to load timeline')
+        }
+      } catch {
+        setError('Failed to load timeline')
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchTimeline()
   }, [username])
-
-  async function fetchTimeline() {
-    try {
-      const res = await fetch(`/api/u/${username}`)
-      if (res.ok) {
-        const data = await res.json()
-        setProfile(data.data?.user)
-        setLogs(data.data?.logs || [])
-      } else if (res.status === 404) {
-        setError('User not found')
-      } else {
-        setError('Failed to load timeline')
-      }
-    } catch (err) {
-      setError('Failed to load timeline')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) {
     return (

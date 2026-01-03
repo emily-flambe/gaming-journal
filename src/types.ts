@@ -49,6 +49,7 @@ export interface GameLog {
   rating: number;
   notes: string | null;
   sort_order: number | null;
+  is_public: boolean;
   created_at: number;
   updated_at: number;
 }

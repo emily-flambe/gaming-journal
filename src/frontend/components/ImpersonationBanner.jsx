@@ -1,4 +1,4 @@
-import { useAuth } from '../App'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function ImpersonationBanner() {
   const { user, isImpersonating, stopImpersonating } = useAuth()

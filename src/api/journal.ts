@@ -147,7 +147,7 @@ journal.post('/logs/:logId', async (c) => {
     }, 404);
   }
 
-  const { title, content, progress, rating, predictions: newPredictions } = body;
+  const { title, content, progress, rating, entry_date, predictions: newPredictions } = body;
 
   if (!content || typeof content !== 'string' || content.trim().length === 0) {
     return c.json({
@@ -166,18 +166,27 @@ journal.post('/logs/:logId', async (c) => {
     }
   }
 
+  // Parse entry_date or default to now
+  let createdAt: number;
+  if (entry_date) {
+    createdAt = Math.floor(new Date(entry_date).getTime() / 1000);
+  } else {
+    createdAt = Math.floor(Date.now() / 1000);
+  }
+
   const entryId = generateId();
 
   await c.env.DB.prepare(`
-    INSERT INTO journal_entries (id, game_log_id, title, content, progress, rating)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO journal_entries (id, game_log_id, title, content, progress, rating, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `).bind(
     entryId,
     logId,
     title?.trim() || null,
     content.trim(),
     progress?.trim() || null,
-    rating ?? null
+    rating ?? null,
+    createdAt
   ).run();
 
   // Create predictions if provided
@@ -227,7 +236,7 @@ journal.patch('/:id', async (c) => {
     }, 404);
   }
 
-  const { title, content, progress, rating } = body;
+  const { title, content, progress, rating, entry_date } = body;
   const updates: string[] = [];
   const params: any[] = [];
 
@@ -261,6 +270,12 @@ journal.patch('/:id', async (c) => {
     }
     updates.push('rating = ?');
     params.push(rating);
+  }
+
+  if (entry_date !== undefined) {
+    const createdAt = Math.floor(new Date(entry_date).getTime() / 1000);
+    updates.push('created_at = ?');
+    params.push(createdAt);
   }
 
   if (updates.length > 0) {

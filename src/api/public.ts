@@ -64,14 +64,14 @@ publicTimeline.get('/:username', async (c) => {
   });
 });
 
-// GET /api/u/:username/:logId - Get public game log with journal entries
-publicTimeline.get('/:username/:logId', async (c) => {
+// GET /api/u/:username/journal/:logId - Get public game log with journal entries
+publicTimeline.get('/:username/journal/:logId', async (c) => {
   const username = c.req.param('username').toLowerCase();
   const logId = c.req.param('logId');
 
   // Find user by username
   const user = await c.env.DB.prepare(
-    'SELECT id, username, display_name, avatar_url, is_public FROM users WHERE username = ?'
+    'SELECT id, username, display_name, avatar_url FROM users WHERE username = ?'
   ).bind(username).first<User>();
 
   if (!user) {
@@ -81,15 +81,7 @@ publicTimeline.get('/:username/:logId', async (c) => {
     }, 404);
   }
 
-  // Check if timeline is public
-  if (!user.is_public) {
-    return c.json({
-      data: null,
-      error: { message: 'This timeline is private', code: 'PRIVATE' }
-    }, 403);
-  }
-
-  // Fetch the game log
+  // Fetch the game log and check if it's public
   const log = await c.env.DB.prepare(`
     SELECT
       gl.id,
@@ -99,6 +91,7 @@ publicTimeline.get('/:username/:logId', async (c) => {
       gl.end_date,
       gl.rating,
       gl.notes,
+      gl.is_public,
       g.cover_url,
       g.release_date,
       g.metacritic,
@@ -109,7 +102,7 @@ publicTimeline.get('/:username/:logId', async (c) => {
     FROM game_logs gl
     LEFT JOIN games g ON gl.game_id = g.id
     WHERE gl.id = ? AND gl.user_id = ?
-  `).bind(logId, user.id).first();
+  `).bind(logId, user.id).first<any>();
 
   if (!log) {
     return c.json({
@@ -118,10 +111,35 @@ publicTimeline.get('/:username/:logId', async (c) => {
     }, 404);
   }
 
-  // Fetch journal entries
+  // Check if this specific journal is public
+  if (!log.is_public) {
+    return c.json({
+      data: null,
+      error: { message: 'This journal is private', code: 'PRIVATE' }
+    }, 403);
+  }
+
+  // Fetch journal entries with all fields
   const entries = await c.env.DB.prepare(
-    'SELECT id, content, created_at FROM journal_entries WHERE game_log_id = ? ORDER BY created_at ASC'
+    'SELECT * FROM journal_entries WHERE game_log_id = ? ORDER BY created_at ASC'
   ).bind(logId).all();
+
+  // Get predictions for all entries
+  const entryIds = entries.results.map((e: any) => e.id);
+  let predictions: any[] = [];
+
+  if (entryIds.length > 0) {
+    const placeholders = entryIds.map(() => '?').join(',');
+    predictions = (await c.env.DB.prepare(
+      `SELECT * FROM predictions WHERE journal_entry_id IN (${placeholders}) ORDER BY created_at ASC`
+    ).bind(...entryIds).all()).results;
+  }
+
+  // Attach predictions to entries
+  const entriesWithPredictions = entries.results.map((entry: any) => ({
+    ...entry,
+    predictions: predictions.filter((p: any) => p.journal_entry_id === entry.id)
+  }));
 
   return c.json({
     data: {
@@ -131,7 +149,7 @@ publicTimeline.get('/:username/:logId', async (c) => {
         avatar_url: user.avatar_url,
       },
       log,
-      journal_entries: entries.results,
+      entries: entriesWithPredictions,
     },
     error: null
   });

@@ -203,6 +203,88 @@ auth.get('/dev-login', async (c) => {
       entryId,
       'I bet Joshua is still alive somehow'
     ).run();
+
+    // Add second FF XVI entry for rating chart
+    const entryId2 = generateId();
+    await c.env.DB.prepare(`
+      INSERT INTO journal_entries (id, game_log_id, title, content, progress, rating, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      entryId2,
+      gameLogId,
+      'Getting Into It',
+      'The story is picking up. Combat is still satisfying and I love the Eikon battles.',
+      'Chapter 3',
+      9,
+      Math.floor(new Date('2025-01-15').getTime() / 1000)
+    ).run();
+
+    // Seed Clair Obscur: Expedition 33
+    const gameLogId2 = generateId();
+    await c.env.DB.prepare(`
+      INSERT INTO game_logs (id, user_id, game_name, start_date, rating, notes, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      gameLogId2,
+      userId,
+      'Clair Obscur: Expedition 33',
+      '2025-05',
+      9,
+      'Beautiful turn-based RPG with real-time elements.',
+      1
+    ).run();
+
+    const entry3Id = generateId();
+    await c.env.DB.prepare(`
+      INSERT INTO journal_entries (id, game_log_id, title, content, progress, rating, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      entry3Id,
+      gameLogId2,
+      'Day One',
+      'Wow, the art style is incredible. The blend of turn-based and action combat feels fresh.',
+      'Tutorial',
+      9,
+      Math.floor(new Date('2025-05-01').getTime() / 1000)
+    ).run();
+
+    await c.env.DB.prepare(`
+      INSERT INTO predictions (id, journal_entry_id, content)
+      VALUES (?, ?, ?)
+    `).bind(
+      generateId(),
+      entry3Id,
+      'The Paintress will turn out to be connected to the main villain'
+    ).run();
+
+    // Seed Dispatch
+    const gameLogId3 = generateId();
+    await c.env.DB.prepare(`
+      INSERT INTO game_logs (id, user_id, game_name, start_date, rating, notes, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      gameLogId3,
+      userId,
+      'Dispatch',
+      '2025-12',
+      7,
+      'Interesting puzzle game with a unique communication mechanic.',
+      2
+    ).run();
+
+    const entry4Id = generateId();
+    await c.env.DB.prepare(`
+      INSERT INTO journal_entries (id, game_log_id, title, content, progress, rating, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      entry4Id,
+      gameLogId3,
+      'Just Started',
+      'The premise is intriguing. Using radio communications to guide explorers through unknown environments.',
+      'Mission 1',
+      7,
+      Math.floor(new Date('2025-12-01').getTime() / 1000)
+    ).run();
   }
 
   // Create session token

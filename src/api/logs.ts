@@ -88,6 +88,35 @@ logs.post('/', async (c) => {
   return c.json({ data: log, error: null }, 201);
 });
 
+// GET /api/logs/:id - Get single game log
+logs.get('/:id', async (c) => {
+  const userId = c.get('userId');
+  const logId = c.req.param('id');
+
+  const log = await c.env.DB.prepare(`
+    SELECT
+      gl.*,
+      g.cover_url,
+      g.metacritic,
+      g.website,
+      g.genres,
+      g.developers,
+      g.publishers
+    FROM game_logs gl
+    LEFT JOIN games g ON gl.game_id = g.id
+    WHERE gl.id = ? AND gl.user_id = ?
+  `).bind(logId, userId).first();
+
+  if (!log) {
+    return c.json({
+      data: null,
+      error: { message: 'Game log not found', code: 'NOT_FOUND' }
+    }, 404);
+  }
+
+  return c.json({ data: log, error: null });
+});
+
 // PATCH /api/logs/:id - Update game log
 logs.patch('/:id', async (c) => {
   const userId = c.get('userId');
@@ -134,6 +163,10 @@ logs.patch('/:id', async (c) => {
   if (body.notes !== undefined) {
     updates.push('notes = ?');
     values.push(body.notes || null);
+  }
+  if (body.is_public !== undefined) {
+    updates.push('is_public = ?');
+    values.push(body.is_public ? 1 : 0);
   }
 
   if (updates.length === 0) {

@@ -1,10 +1,16 @@
 import { useState } from 'react'
 
+function formatDateForInput(timestamp) {
+  if (!timestamp) return new Date().toISOString().split('T')[0]
+  return new Date(timestamp * 1000).toISOString().split('T')[0]
+}
+
 export default function JournalEntryForm({ entry, onSave, onCancel }) {
   const [title, setTitle] = useState(entry?.title || '')
   const [content, setContent] = useState(entry?.content || '')
   const [progress, setProgress] = useState(entry?.progress || '')
   const [rating, setRating] = useState(entry?.rating ?? '')
+  const [entryDate, setEntryDate] = useState(formatDateForInput(entry?.created_at))
   const [predictions, setPredictions] = useState([])
   const [newPrediction, setNewPrediction] = useState('')
   const [saving, setSaving] = useState(false)
@@ -33,6 +39,7 @@ export default function JournalEntryForm({ entry, onSave, onCancel }) {
         content: content.trim(),
         progress: progress.trim() || null,
         rating: rating !== '' ? parseInt(rating, 10) : null,
+        entry_date: entryDate,
       }
 
       // Only include predictions for new entries
@@ -63,16 +70,27 @@ export default function JournalEntryForm({ entry, onSave, onCancel }) {
         </button>
       </div>
 
-      {/* Title */}
-      <div>
-        <label className="block text-sm text-gray-400 mb-1">Title (optional)</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g., First impressions, Plot twist!, Final thoughts"
-          className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
-        />
+      {/* Date and Title row */}
+      <div className="flex gap-4">
+        <div className="w-40">
+          <label className="block text-sm text-gray-400 mb-1">Date</label>
+          <input
+            type="date"
+            value={entryDate}
+            onChange={(e) => setEntryDate(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm text-gray-400 mb-1">Title (optional)</label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g., First impressions, Plot twist!, Final thoughts"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+          />
+        </div>
       </div>
 
       {/* Progress */}

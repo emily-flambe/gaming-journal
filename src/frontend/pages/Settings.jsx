@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../App'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Settings() {
   const { user, checkAuth, isAdmin } = useAuth()
@@ -104,7 +104,7 @@ export default function Settings() {
         const data = await res.json()
         setMessage({ type: 'error', text: data.error?.message || 'Failed to save settings' })
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to save settings' })
     } finally {
       setSaving(false)

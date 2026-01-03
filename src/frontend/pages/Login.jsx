@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../App'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Login() {
   const { user, loading } = useAuth()

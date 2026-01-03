@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS game_logs (
   rating INTEGER NOT NULL,       -- 1-10
   notes TEXT,                    -- Final summary
   sort_order INTEGER,
+  is_public INTEGER DEFAULT 0,   -- 0 = private, 1 = publicly shareable journal
   created_at INTEGER DEFAULT (unixepoch()),
   updated_at INTEGER DEFAULT (unixepoch()),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
