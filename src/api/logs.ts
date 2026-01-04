@@ -217,28 +217,4 @@ logs.delete('/:id', async (c) => {
   return c.json({ data: { success: true }, error: null });
 });
 
-// PATCH /api/logs/reorder - Bulk update sort order
-logs.patch('/reorder', async (c) => {
-  const userId = c.get('userId');
-  const body = await c.req.json();
-
-  const { updates } = body;
-
-  if (!Array.isArray(updates)) {
-    return c.json({
-      data: null,
-      error: { message: 'updates must be an array', code: 'VALIDATION_ERROR' }
-    }, 400);
-  }
-
-  // Verify all logs belong to user and update
-  for (const { id, sort_order } of updates) {
-    await c.env.DB.prepare(
-      'UPDATE game_logs SET sort_order = ?, updated_at = unixepoch() WHERE id = ? AND user_id = ?'
-    ).bind(sort_order, id, userId).run();
-  }
-
-  return c.json({ data: { success: true }, error: null });
-});
-
 export default logs;
