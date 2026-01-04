@@ -187,7 +187,7 @@ export default function Settings() {
             </label>
           </div>
 
-          {profile?.is_public && username && (
+          {!!profile?.is_public && username && (
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
               <p className="text-sm text-gray-300">
                 Your timeline is visible at:{' '}

@@ -318,7 +318,7 @@ export default function TimelineView({
                       </button>
                     </>
                   )}
-                  {!editable && username && selectedLog.is_public && selectedLog.slug && (
+                  {!editable && username && !!selectedLog.is_public && selectedLog.slug && (
                     <Link
                       to={`/u/${username}/journal/${selectedLog.slug}`}
                       className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
@@ -512,7 +512,7 @@ export default function TimelineView({
                       {journalEntries.length} journal {journalEntries.length === 1 ? 'entry' : 'entries'} →
                     </Link>
                   )}
-                  {!editable && username && selectedLog.is_public && selectedLog.slug && journalEntries.length > 0 && (
+                  {!editable && username && !!selectedLog.is_public && selectedLog.slug && journalEntries.length > 0 && (
                     <Link to={`/u/${username}/journal/${selectedLog.slug}`} className="text-purple-400 hover:text-purple-300 text-base mt-4 inline-block">
                       {journalEntries.length} journal {journalEntries.length === 1 ? 'entry' : 'entries'} →
                     </Link>
