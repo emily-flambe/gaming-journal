@@ -19,86 +19,21 @@ A personal gaming journal where you track games you play, write notes while play
 
 ## Development
 
-### Prerequisites
-
-- Node.js 18+
-- Cloudflare account
-- RAWG API key (free at https://rawg.io/apidocs)
-- Google OAuth credentials
-
-### Setup
-
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/emily-flambe/gaming-journal.git
-   cd gaming-journal
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up secrets:
-   ```bash
-   wrangler secret put JWT_SECRET
-   wrangler secret put GOOGLE_CLIENT_ID
-   wrangler secret put GOOGLE_CLIENT_SECRET
-   wrangler secret put RAWG_API_KEY
-   ```
-
-4. Initialize the database:
-   ```bash
-   npm run db:init           # Local
-   npm run db:init:remote    # Production
-   ```
-
-5. Run locally:
-   ```bash
-   npm run dev
-   ```
-
-### Scripts
-
-- `npm run dev` - Start development server (builds frontend + wrangler dev)
-- `npm run build:frontend` - Build React frontend
-- `npm run deploy` - Deploy to Cloudflare Workers
-- `npm run db:init` - Initialize local D1 database
-- `npm run db:init:remote` - Initialize remote D1 database
-- `npm test` - Run unit tests
-- `npm run test:e2e` - Run Playwright e2e tests
-
-## Project Structure
-
-```
-gaming-journal/
-├── src/
-│   ├── index.ts              # Hono app entry
-│   ├── types.ts              # TypeScript types
-│   ├── api/                  # API route handlers
-│   │   ├── auth.ts           # OAuth routes
-│   │   ├── logs.ts           # Game log CRUD
-│   │   ├── journal.ts        # Journal entries
-│   │   ├── games.ts          # RAWG search
-│   │   ├── profile.ts        # User settings
-│   │   └── public.ts         # Public timeline
-│   ├── db/
-│   │   └── schema.sql        # D1 schema
-│   ├── lib/
-│   │   ├── auth.ts           # JWT utilities
-│   │   └── oauth/            # OAuth services
-│   ├── middleware/
-│   │   └── auth.ts           # Auth middleware
-│   └── frontend/             # React app
-├── e2e/                      # Playwright tests
-├── .plans/                   # Design docs
-├── wrangler.toml             # Cloudflare config
-└── package.json
+```bash
+npm install
+make setup    # Copy secrets, init local DB
+make dev      # Start dev server
 ```
 
-## API Endpoints
+See `CLAUDE.md` for detailed development guidelines.
 
-See [.plans/api-reference.md](.plans/api-reference.md) for full API documentation.
+## Deployment
+
+```bash
+npm run deploy
+```
+
+Production URL: https://gaming.emilycogsdill.com
 
 ## License
 
