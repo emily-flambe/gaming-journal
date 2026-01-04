@@ -214,6 +214,7 @@ export default function TimelineView({
     'July', 'August', 'September', 'October', 'November', 'December']
 
   // Group logs by year and month (based on start_date, fallback to end_date)
+  // Logs arrive pre-sorted from API by COALESCE(start_date, end_date) DESC
   const logsByYearMonth = logs.reduce((acc, log) => {
     const date = log.start_date || log.end_date
     if (!date) return acc
@@ -224,17 +225,6 @@ export default function TimelineView({
     acc[year][month].push(log)
     return acc
   }, {})
-
-  // Sort games within each month by start_date DESC
-  Object.keys(logsByYearMonth).forEach(year => {
-    Object.keys(logsByYearMonth[year]).forEach(month => {
-      logsByYearMonth[year][month].sort((a, b) => {
-        const dateA = a.start_date || a.end_date || ''
-        const dateB = b.start_date || b.end_date || ''
-        return dateB.localeCompare(dateA)
-      })
-    })
-  })
 
   const years = Object.keys(logsByYearMonth).sort((a, b) => b - a)
 
@@ -625,12 +615,10 @@ export default function TimelineView({
                         {/* Month section with labels on both sides */}
                         <div className="flex flex-col gap-2">
                           {monthLogs.map((log, idx) => {
-                            const left = draggedId === log.id && dragRating !== null
-                              ? getPosition(dragRating)
-                              : getPosition(log.rating)
                             const isSelected = selectedLog?.id === log.id
                             const isDragging = draggedId === log.id
-                            // Show month label on first game of each month
+                            const displayRating = isDragging && dragRating !== null ? dragRating : log.rating
+                            const left = getPosition(displayRating)
                             const showMonthLabel = idx === 0
 
                             return (
@@ -648,7 +636,7 @@ export default function TimelineView({
                                   onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
                                   onDragEnd={editable ? handleDragEnd : undefined}
                                   onClick={(e) => handleGameClick(e, log, isSelected)}
-                                  className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(isDragging ? dragRating : log.rating)} ${getBorderColor(isDragging ? dragRating : log.rating)}
+                                  className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(displayRating)} ${getBorderColor(displayRating)}
                                     ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
                                     ${isDragging ? 'opacity-75 scale-105' : ''}
                                     hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
