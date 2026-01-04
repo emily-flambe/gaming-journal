@@ -98,6 +98,8 @@ This project has TWO timeline components that must stay in sync:
 
 The schema is defined in `src/db/schema.sql`. Local and remote D1 databases must stay in sync.
 
+**You have full access to wrangler and can run commands on both local and remote databases.** Don't hesitate to use `--remote` when needed.
+
 **When modifying the schema:**
 1. Update `src/db/schema.sql` with the new schema
 2. Apply changes to BOTH local and remote databases:
@@ -109,6 +111,11 @@ The schema is defined in `src/db/schema.sql`. Local and remote D1 databases must
    npx wrangler d1 execute gaming-journal-db --remote --command "ALTER TABLE ..."
    ```
 3. Never assume a migration applied to one has been applied to the other
+
+**Running bulk updates:** For large SQL files, use `--file`:
+```bash
+npx wrangler d1 execute gaming-journal-db --remote --file=./path/to/updates.sql
+```
 
 **Common pitfall:** Adding columns to the schema file doesn't automatically migrate existing databases. You must run ALTER TABLE commands on both local and remote.
 
