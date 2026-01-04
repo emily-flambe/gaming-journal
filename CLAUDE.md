@@ -10,9 +10,7 @@
 git fetch origin
 git worktree add ../gaming-journal-feature-name -b feature-name origin/main
 cd ../gaming-journal-feature-name
-cp ../gaming-journal/.dev.vars .  # Copy environment secrets (not in git)
-npm install
-npx wrangler d1 execute gaming-journal-db --local --file=./src/db/schema.sql  # Initialize local DB
+make setup  # Copies .dev.vars, installs deps, initializes local DB
 
 # Do all work in the worktree, then create a PR
 # After merge, clean up:
@@ -20,7 +18,16 @@ cd ../gaming-journal
 git worktree remove ../gaming-journal-feature-name
 ```
 
-**IMPORTANT:** The `.dev.vars` file is gitignored and contains secrets (Google OAuth credentials, JWT secret, RAWG API key). Without it, the dev server won't work properly. Always copy it from the main project directory when creating a new worktree.
+**What `make setup` does:**
+1. Copies `.dev.vars` from the main project (contains secrets - Google OAuth, JWT, RAWG API key)
+2. Runs `npm install`
+3. Initializes the local D1 database
+
+**Other useful make commands:**
+- `make dev` - Start the dev server (runs setup first if needed)
+- `make db-init` - Reinitialize local database
+- `make lint` / `make test` / `make test-e2e` - Run checks
+- `make deploy` - Deploy to production
 
 ### Key Commands
 ```bash

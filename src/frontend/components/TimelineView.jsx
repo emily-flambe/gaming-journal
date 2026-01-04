@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { RatingChart } from '../pages/JournalPage'
 
@@ -17,6 +17,9 @@ export default function TimelineView({
   const [journalEntries, setJournalEntries] = useState([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [draggedId, setDraggedId] = useState(null)
+  const [dragRating, setDragRating] = useState(null)
+  const timelineRef = useRef(null)
 
   useEffect(() => {
     if (selectedLog) {
@@ -150,6 +153,60 @@ export default function TimelineView({
     } finally {
       setDeleting(false)
     }
+  }
+
+  // Horizontal drag handlers (for changing rating only, no vertical reordering)
+  function handleDragStart(e, logId, currentRating) {
+    if (!editable) return
+    setDraggedId(logId)
+    setDragRating(currentRating ?? 5)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  function handleTimelineDragOver(e) {
+    if (!editable || !draggedId || !timelineRef.current) return
+    e.preventDefault()
+    const rect = timelineRef.current.getBoundingClientRect()
+    const relativeX = (e.clientX - rect.left) / rect.width
+    // Map to 0-10 rating (5% padding on each side matches getPosition)
+    const clampedX = Math.max(0.05, Math.min(0.95, relativeX))
+    const normalizedX = (clampedX - 0.05) / 0.9
+    const rating = Math.round(normalizedX * 10)
+    setDragRating(rating)
+  }
+
+  function handleDragEnd() {
+    setDraggedId(null)
+    setDragRating(null)
+  }
+
+  async function handleDrop(e) {
+    if (!editable || !draggedId) {
+      handleDragEnd()
+      return
+    }
+    e.preventDefault()
+    const newRating = dragRating
+
+    const draggedLog = logs.find(l => l.id === draggedId)
+    if (draggedLog && newRating !== null && draggedLog.rating !== newRating) {
+      // Update locally
+      onLogsChange?.(logs.map(log =>
+        log.id === draggedId ? { ...log, rating: newRating } : log
+      ))
+      // Save to server
+      try {
+        await fetch(`/api/logs/${draggedId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ rating: newRating }),
+        })
+      } catch (err) {
+        console.error('Failed to update rating:', err)
+      }
+    }
+    handleDragEnd()
   }
 
   // Group logs by year (based on start_date, fallback to end_date) and sort by start_date DESC
@@ -499,7 +556,12 @@ export default function TimelineView({
           </div>
 
           {/* Timeline */}
-          <div className="relative">
+          <div
+            ref={timelineRef}
+            className="relative"
+            onDragOver={editable ? handleTimelineDragOver : undefined}
+            onDrop={editable ? handleDrop : undefined}
+          >
             {/* Boundary lines at 0 and 10 */}
             <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: `${getPosition(0)}%` }}>
               <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-500">0</span>
@@ -511,6 +573,31 @@ export default function TimelineView({
             {/* Center line */}
             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-700 -translate-x-1/2"></div>
 
+            {/* Rating guide lines (shown when dragging) */}
+            {editable && draggedId && (
+              <>
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(r => {
+                  const pos = getPosition(r)
+                  const isActive = dragRating === r
+                  return (
+                    <div
+                      key={r}
+                      className={`absolute top-0 bottom-0 w-px transition-opacity ${
+                        isActive ? 'bg-purple-400 opacity-100' : 'bg-gray-600 opacity-30'
+                      }`}
+                      style={{ left: `${pos}%` }}
+                    >
+                      <span className={`absolute -top-4 left-1/2 -translate-x-1/2 text-xs ${
+                        isActive ? 'text-purple-400 font-bold' : 'text-gray-500'
+                      }`}>
+                        {r}
+                      </span>
+                    </div>
+                  )
+                })}
+              </>
+            )}
+
             {years.map(year => (
               <div key={year} className="mb-8">
                 <div className="sticky top-0 z-10 bg-gray-900/95 py-2 border-b border-gray-700 mb-4">
@@ -519,16 +606,24 @@ export default function TimelineView({
 
                 <div className="flex flex-col gap-3">
                   {logsByYear[year].map((log) => {
-                    const left = getPosition(log.rating)
+                    const left = draggedId === log.id && dragRating !== null
+                      ? getPosition(dragRating)
+                      : getPosition(log.rating)
                     const isSelected = selectedLog?.id === log.id
+                    const isDragging = draggedId === log.id
 
                     return (
                       <div key={log.id} className="relative">
                         <button
+                          draggable={editable}
+                          onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
+                          onDragEnd={editable ? handleDragEnd : undefined}
                           onClick={(e) => handleGameClick(e, log, isSelected)}
-                          className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
+                          className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(isDragging ? dragRating : log.rating)} ${getBorderColor(isDragging ? dragRating : log.rating)}
                             ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
-                            hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]`}
+                            ${isDragging ? 'opacity-75 scale-105' : ''}
+                            hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
+                            ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
                           style={{
                             left: `${left}%`,
                             transform: 'translateX(-50%)',
