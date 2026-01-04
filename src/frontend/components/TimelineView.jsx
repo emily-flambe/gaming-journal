@@ -612,7 +612,6 @@ export default function TimelineView({
 
                     return (
                       <div key={`${year}-${month}`} className="mb-4">
-                        {/* Month section with labels on both sides */}
                         <div className="flex flex-col gap-2">
                           {monthLogs.map((log, idx) => {
                             const isSelected = selectedLog?.id === log.id
@@ -648,13 +647,6 @@ export default function TimelineView({
                                 >
                                   {log.game_name}
                                 </button>
-
-                                {/* Right month label */}
-                                {showMonthLabel && (
-                                  <span className="absolute text-xs text-gray-500 font-medium" style={{ right: '-2%', transform: 'translateX(100%)' }}>
-                                    {monthName}
-                                  </span>
-                                )}
                               </div>
                             )
                           })}
