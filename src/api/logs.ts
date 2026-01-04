@@ -9,6 +9,18 @@ const logs = new Hono<{ Bindings: Env }>();
 // Apply auth middleware to all routes
 logs.use('*', authMiddleware);
 
+// Validate date has at least year and month (YYYY-MM or YYYY-MM-DD)
+function isValidDate(date: string | null | undefined): boolean {
+  if (!date) return false;
+  const parts = date.split('-');
+  if (parts.length < 2) return false;
+  const [year, month] = parts;
+  if (!/^\d{4}$/.test(year)) return false;
+  if (!/^\d{2}$/.test(month)) return false;
+  const monthNum = parseInt(month, 10);
+  return monthNum >= 1 && monthNum <= 12;
+}
+
 // GET /api/logs - List user's game logs
 logs.get('/', async (c) => {
   const userId = c.get('userId');
@@ -67,8 +79,27 @@ logs.post('/', async (c) => {
     }, 400);
   }
 
-  // Default to current year if no dates provided
-  const finalStartDate = start_date || (end_date ? null : `${new Date().getFullYear()}-01-01`);
+  // Default to current year-month if no start_date provided
+  const now = new Date();
+  const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const finalStartDate = start_date || currentYearMonth;
+
+  // Validate start_date has year and month
+  if (!isValidDate(finalStartDate)) {
+    return c.json({
+      data: null,
+      error: { message: 'start_date must have year and month (YYYY-MM or YYYY-MM-DD)', code: 'VALIDATION_ERROR' }
+    }, 400);
+  }
+
+  // Validate end_date if provided
+  if (end_date && !isValidDate(end_date)) {
+    return c.json({
+      data: null,
+      error: { message: 'end_date must have year and month (YYYY-MM or YYYY-MM-DD)', code: 'VALIDATION_ERROR' }
+    }, 400);
+  }
+
   const finalEndDate = end_date || null;
   const finalRating = rating ?? 5;
 
@@ -148,10 +179,24 @@ logs.patch('/:id', async (c) => {
     values.push(body.game_name);
   }
   if (body.start_date !== undefined) {
+    // start_date is required and must have year+month
+    if (!body.start_date || !isValidDate(body.start_date)) {
+      return c.json({
+        data: null,
+        error: { message: 'start_date must have year and month (YYYY-MM or YYYY-MM-DD)', code: 'VALIDATION_ERROR' }
+      }, 400);
+    }
     updates.push('start_date = ?');
-    values.push(body.start_date || null);
+    values.push(body.start_date);
   }
   if (body.end_date !== undefined) {
+    // end_date is optional but if provided must have year+month
+    if (body.end_date && !isValidDate(body.end_date)) {
+      return c.json({
+        data: null,
+        error: { message: 'end_date must have year and month (YYYY-MM or YYYY-MM-DD)', code: 'VALIDATION_ERROR' }
+      }, 400);
+    }
     updates.push('end_date = ?');
     values.push(body.end_date || null);
   }

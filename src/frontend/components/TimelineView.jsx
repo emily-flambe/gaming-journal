@@ -209,26 +209,34 @@ export default function TimelineView({
     handleDragEnd()
   }
 
-  // Group logs by year (based on start_date, fallback to end_date) and sort by start_date DESC
-  const logsByYear = logs.reduce((acc, log) => {
+  // Month names for display
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December']
+
+  // Group logs by year and month (based on start_date, fallback to end_date)
+  const logsByYearMonth = logs.reduce((acc, log) => {
     const date = log.start_date || log.end_date
     if (!date) return acc
-    const year = date.split('-')[0]
-    if (!acc[year]) acc[year] = []
-    acc[year].push(log)
+    const [year, month] = date.split('-')
+    if (!year || !month) return acc
+    if (!acc[year]) acc[year] = {}
+    if (!acc[year][month]) acc[year][month] = []
+    acc[year][month].push(log)
     return acc
   }, {})
 
-  // Sort by start_date DESC within each year (most recent first), fallback to end_date
-  Object.keys(logsByYear).forEach(year => {
-    logsByYear[year].sort((a, b) => {
-      const dateA = a.start_date || a.end_date || ''
-      const dateB = b.start_date || b.end_date || ''
-      return dateB.localeCompare(dateA)
+  // Sort games within each month by start_date DESC
+  Object.keys(logsByYearMonth).forEach(year => {
+    Object.keys(logsByYearMonth[year]).forEach(month => {
+      logsByYearMonth[year][month].sort((a, b) => {
+        const dateA = a.start_date || a.end_date || ''
+        const dateB = b.start_date || b.end_date || ''
+        return dateB.localeCompare(dateA)
+      })
     })
   })
 
-  const years = Object.keys(logsByYear).sort((a, b) => b - a)
+  const years = Object.keys(logsByYearMonth).sort((a, b) => b - a)
 
   const getPosition = (rating) => {
     if (rating === undefined || rating === null) return 50
@@ -598,45 +606,77 @@ export default function TimelineView({
               </>
             )}
 
-            {years.map(year => (
-              <div key={year} className="mb-8">
-                <div className="sticky top-0 z-10 bg-gray-900/95 py-2 border-b border-gray-700 mb-4">
-                  <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
-                </div>
+            {years.map(year => {
+              // Get months for this year, sorted DESC (most recent first)
+              const months = Object.keys(logsByYearMonth[year]).sort((a, b) => b.localeCompare(a))
 
-                <div className="flex flex-col gap-3">
-                  {logsByYear[year].map((log) => {
-                    const left = draggedId === log.id && dragRating !== null
-                      ? getPosition(dragRating)
-                      : getPosition(log.rating)
-                    const isSelected = selectedLog?.id === log.id
-                    const isDragging = draggedId === log.id
+              return (
+                <div key={year} className="mb-8">
+                  <div className="sticky top-0 z-10 bg-gray-900/95 py-2 border-b border-gray-700 mb-4">
+                    <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
+                  </div>
+
+                  {months.map(month => {
+                    const monthName = monthNames[parseInt(month, 10) - 1]
+                    const monthLogs = logsByYearMonth[year][month]
 
                     return (
-                      <div key={log.id} className="relative">
-                        <button
-                          draggable={editable}
-                          onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
-                          onDragEnd={editable ? handleDragEnd : undefined}
-                          onClick={(e) => handleGameClick(e, log, isSelected)}
-                          className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(isDragging ? dragRating : log.rating)} ${getBorderColor(isDragging ? dragRating : log.rating)}
-                            ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
-                            ${isDragging ? 'opacity-75 scale-105' : ''}
-                            hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
-                            ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-                          style={{
-                            left: `${left}%`,
-                            transform: 'translateX(-50%)',
-                          }}
-                        >
-                          {log.game_name}
-                        </button>
+                      <div key={`${year}-${month}`} className="mb-4">
+                        {/* Month section with labels on both sides */}
+                        <div className="flex flex-col gap-2">
+                          {monthLogs.map((log, idx) => {
+                            const left = draggedId === log.id && dragRating !== null
+                              ? getPosition(dragRating)
+                              : getPosition(log.rating)
+                            const isSelected = selectedLog?.id === log.id
+                            const isDragging = draggedId === log.id
+                            // Show month label on first game of each month
+                            const showMonthLabel = idx === 0
+
+                            return (
+                              <div key={log.id} className="relative flex items-center">
+                                {/* Left month label */}
+                                {showMonthLabel && (
+                                  <span className="absolute text-xs text-gray-500 font-medium" style={{ left: '-2%', transform: 'translateX(-100%)' }}>
+                                    {monthName}
+                                  </span>
+                                )}
+
+                                {/* Game button */}
+                                <button
+                                  draggable={editable}
+                                  onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
+                                  onDragEnd={editable ? handleDragEnd : undefined}
+                                  onClick={(e) => handleGameClick(e, log, isSelected)}
+                                  className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(isDragging ? dragRating : log.rating)} ${getBorderColor(isDragging ? dragRating : log.rating)}
+                                    ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
+                                    ${isDragging ? 'opacity-75 scale-105' : ''}
+                                    hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
+                                    ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                                  style={{
+                                    left: `${left}%`,
+                                    transform: 'translateX(-50%)',
+                                  }}
+                                >
+                                  {log.game_name}
+                                </button>
+
+                                {/* Right month label */}
+                                {showMonthLabel && (
+                                  <span className="absolute text-xs text-gray-500 font-medium" style={{ right: '-2%', transform: 'translateX(100%)' }}>
+                                    {monthName}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
                       </div>
                     )
                   })}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
