@@ -50,7 +50,7 @@ publicTimeline.get('/:username', async (c) => {
     FROM game_logs gl
     LEFT JOIN games g ON gl.game_id = g.id
     WHERE gl.user_id = ?
-    ORDER BY COALESCE(gl.end_date, gl.start_date) DESC, gl.sort_order DESC
+    ORDER BY COALESCE(gl.start_date, gl.end_date) DESC
   `).bind(user.id).all();
 
   return c.json({

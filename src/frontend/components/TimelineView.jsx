@@ -14,12 +14,11 @@ export default function TimelineView({
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState({})
   const [saving, setSaving] = useState(false)
-  const [draggedId, setDraggedId] = useState(null)
-  const [dropTarget, setDropTarget] = useState(null)
-  const [dragRating, setDragRating] = useState(null)
   const [journalEntries, setJournalEntries] = useState([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [draggedId, setDraggedId] = useState(null)
+  const [dragRating, setDragRating] = useState(null)
   const timelineRef = useRef(null)
 
   useEffect(() => {
@@ -156,29 +155,20 @@ export default function TimelineView({
     }
   }
 
+  // Horizontal drag handlers (for changing rating only, no vertical reordering)
   function handleDragStart(e, logId, currentRating) {
     if (!editable) return
     setDraggedId(logId)
-    setDragRating(currentRating || 5)
+    setDragRating(currentRating ?? 5)
     e.dataTransfer.effectAllowed = 'move'
   }
 
-  function handleDragOver(e, logId) {
-    if (!editable) return
-    e.preventDefault()
-    if (logId === draggedId) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const midY = rect.top + rect.height / 2
-    const position = e.clientY < midY ? 'before' : 'after'
-    setDropTarget({ id: logId, position })
-  }
-
   function handleTimelineDragOver(e) {
-    if (!editable) return
+    if (!editable || !draggedId || !timelineRef.current) return
     e.preventDefault()
-    if (!draggedId || !timelineRef.current) return
     const rect = timelineRef.current.getBoundingClientRect()
     const relativeX = (e.clientX - rect.left) / rect.width
+    // Map to 0-10 rating (5% padding on each side matches getPosition)
     const clampedX = Math.max(0.05, Math.min(0.95, relativeX))
     const normalizedX = (clampedX - 0.05) / 0.9
     const rating = Math.round(normalizedX * 10)
@@ -187,110 +177,56 @@ export default function TimelineView({
 
   function handleDragEnd() {
     setDraggedId(null)
-    setDropTarget(null)
     setDragRating(null)
   }
 
-  async function handleDrop(e, year) {
-    if (!editable) return
+  async function handleDrop(e) {
+    if (!editable || !draggedId) {
+      handleDragEnd()
+      return
+    }
     e.preventDefault()
     const newRating = dragRating
 
-    if (!dropTarget && draggedId && newRating !== null) {
-      const draggedLog = logs.find(l => l.id === draggedId)
-      if (draggedLog && draggedLog.rating !== newRating) {
-        onLogsChange?.(logs.map(log =>
-          log.id === draggedId ? { ...log, rating: newRating } : log
-        ))
-        try {
-          await fetch(`/api/logs/${draggedId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ rating: newRating }),
-          })
-        } catch (err) {
-          console.error('Failed to update rating:', err)
-        }
-      }
-      handleDragEnd()
-      return
-    }
-
-    if (!draggedId || !dropTarget || draggedId === dropTarget.id) {
-      handleDragEnd()
-      return
-    }
-
-    const yearLogs = [...logsByYear[year]]
-    const draggedIndex = yearLogs.findIndex(l => l.id === draggedId)
-    const targetIndex = yearLogs.findIndex(l => l.id === dropTarget.id)
-
-    if (draggedIndex === -1 || targetIndex === -1) {
-      handleDragEnd()
-      return
-    }
-
-    const [draggedItem] = yearLogs.splice(draggedIndex, 1)
-    let insertIndex = targetIndex
-    if (draggedIndex < targetIndex) {
-      insertIndex = dropTarget.position === 'after' ? targetIndex : targetIndex - 1
-    } else {
-      insertIndex = dropTarget.position === 'after' ? targetIndex + 1 : targetIndex
-    }
-    yearLogs.splice(insertIndex, 0, draggedItem)
-
-    const updatedLogs = logs.map(log => {
-      const idx = yearLogs.findIndex(l => l.id === log.id)
-      if (log.id === draggedId) {
-        return { ...log, sort_order: idx !== -1 ? idx : log.sort_order, rating: newRating !== null ? newRating : log.rating }
-      }
-      if (idx !== -1) {
-        return { ...log, sort_order: idx }
-      }
-      return log
-    })
-    onLogsChange?.(updatedLogs)
-
-    const updates = yearLogs.map((log, index) => ({ id: log.id, sort_order: index }))
-    try {
-      await fetch('/api/logs/reorder', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ updates }),
-      })
-      const draggedLog = logs.find(l => l.id === draggedId)
-      if (newRating !== null && draggedLog?.rating !== newRating) {
+    const draggedLog = logs.find(l => l.id === draggedId)
+    if (draggedLog && newRating !== null && draggedLog.rating !== newRating) {
+      // Update locally
+      onLogsChange?.(logs.map(log =>
+        log.id === draggedId ? { ...log, rating: newRating } : log
+      ))
+      // Save to server
+      try {
         await fetch(`/api/logs/${draggedId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({ rating: newRating }),
         })
+      } catch (err) {
+        console.error('Failed to update rating:', err)
       }
-    } catch (err) {
-      console.error('Failed to reorder:', err)
     }
-
     handleDragEnd()
   }
 
-  // Group logs by year and sort by sort_order
-  const logsByYear = logs.reduce((acc, log) => {
-    const date = log.end_date || log.start_date
+  // Month names for display
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December']
+
+  // Group logs by year and month (based on start_date, fallback to end_date)
+  // Logs arrive pre-sorted from API by COALESCE(start_date, end_date) DESC
+  const logsByYearMonth = logs.reduce((acc, log) => {
+    const date = log.start_date || log.end_date
     if (!date) return acc
-    const year = date.split('-')[0]
-    if (!acc[year]) acc[year] = []
-    acc[year].push(log)
+    const [year, month] = date.split('-')
+    if (!year || !month) return acc
+    if (!acc[year]) acc[year] = {}
+    if (!acc[year][month]) acc[year][month] = []
+    acc[year][month].push(log)
     return acc
   }, {})
 
-  Object.keys(logsByYear).forEach(year => {
-    logsByYear[year].sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0))
-  })
-
-  const years = Object.keys(logsByYear).sort((a, b) => b - a)
+  const years = Object.keys(logsByYearMonth).sort((a, b) => b - a)
 
   const getPosition = (rating) => {
     if (rating === undefined || rating === null) return 50
@@ -622,7 +558,7 @@ export default function TimelineView({
             ref={timelineRef}
             className="relative"
             onDragOver={editable ? handleTimelineDragOver : undefined}
-            onDrop={editable ? (e) => { if (draggedId && !dropTarget) handleDrop(e, null) } : undefined}
+            onDrop={editable ? handleDrop : undefined}
           >
             {/* Boundary lines at 0 and 10 */}
             <div className="absolute top-0 bottom-0 w-px bg-gray-600" style={{ left: `${getPosition(0)}%` }}>
@@ -660,58 +596,75 @@ export default function TimelineView({
               </>
             )}
 
-            {years.map(year => (
-              <div key={year} className="mb-8">
-                <div className="sticky top-0 z-10 bg-gray-900/95 py-2 border-b border-gray-700 mb-4">
-                  <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
-                </div>
+            {years.map(year => {
+              // Get months for this year, sorted DESC (most recent first)
+              const months = Object.keys(logsByYearMonth[year]).sort((a, b) => b.localeCompare(a))
 
-                <div className="flex flex-col gap-3">
-                  {logsByYear[year].map((log) => {
-                    const left = getPosition(log.rating)
-                    const isSelected = selectedLog?.id === log.id
-                    const isDragging = draggedId === log.id
-                    const showLineBefore = dropTarget?.id === log.id && dropTarget?.position === 'before'
-                    const showLineAfter = dropTarget?.id === log.id && dropTarget?.position === 'after'
+              return (
+                <div key={year} className="mb-8">
+                  <div className="sticky top-0 z-10 bg-gray-900/95 py-2 border-b border-gray-700 mb-4">
+                    <h2 className="text-2xl font-bold text-center text-purple-400">{year}</h2>
+                  </div>
+
+                  {months.map(month => {
+                    const monthName = monthNames[parseInt(month, 10) - 1]
+                    const monthLogs = logsByYearMonth[year][month]
 
                     return (
-                      <div
-                        key={log.id}
-                        className="relative"
-                        onDragOver={editable ? (e) => handleDragOver(e, log.id) : undefined}
-                        onDrop={editable ? (e) => handleDrop(e, year) : undefined}
-                      >
-                        {showLineBefore && (
-                          <div className="absolute left-0 right-0 top-0 h-0.5 bg-purple-500 z-30" />
-                        )}
-                        <div className="relative">
-                          <button
-                            draggable={editable}
-                            onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
-                            onDragEnd={editable ? handleDragEnd : undefined}
-                            onClick={(e) => handleGameClick(e, log, isSelected)}
-                            className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(log.rating)} ${getBorderColor(log.rating)}
-                              ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
-                              ${isDragging ? 'opacity-50 scale-95' : ''}
-                              hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
-                              ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-                            style={{
-                              left: `${left}%`,
-                              transform: 'translateX(-50%)',
-                            }}
-                          >
-                            {log.game_name}
-                          </button>
+                      <div key={`${year}-${month}`} className="mb-4">
+                        {/* Month section with labels on both sides */}
+                        <div className="flex flex-col gap-2">
+                          {monthLogs.map((log, idx) => {
+                            const isSelected = selectedLog?.id === log.id
+                            const isDragging = draggedId === log.id
+                            const displayRating = isDragging && dragRating !== null ? dragRating : log.rating
+                            const left = getPosition(displayRating)
+                            const showMonthLabel = idx === 0
+
+                            return (
+                              <div key={log.id} className="relative flex items-center">
+                                {/* Left month label */}
+                                {showMonthLabel && (
+                                  <span className="absolute text-xs text-gray-500 font-medium" style={{ left: '-2%', transform: 'translateX(-100%)' }}>
+                                    {monthName}
+                                  </span>
+                                )}
+
+                                {/* Game button */}
+                                <button
+                                  draggable={editable}
+                                  onDragStart={editable ? (e) => handleDragStart(e, log.id, log.rating) : undefined}
+                                  onDragEnd={editable ? handleDragEnd : undefined}
+                                  onClick={(e) => handleGameClick(e, log, isSelected)}
+                                  className={`relative px-2 py-1.5 rounded text-sm font-medium transition-all border-2 ${getColor(displayRating)} ${getBorderColor(displayRating)}
+                                    ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110 z-20' : ''}
+                                    ${isDragging ? 'opacity-75 scale-105' : ''}
+                                    hover:brightness-110 text-white shadow-lg cursor-pointer text-center max-w-[180px]
+                                    ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                                  style={{
+                                    left: `${left}%`,
+                                    transform: 'translateX(-50%)',
+                                  }}
+                                >
+                                  {log.game_name}
+                                </button>
+
+                                {/* Right month label */}
+                                {showMonthLabel && (
+                                  <span className="absolute text-xs text-gray-500 font-medium" style={{ right: '-2%', transform: 'translateX(100%)' }}>
+                                    {monthName}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
-                        {showLineAfter && (
-                          <div className="absolute left-0 right-0 bottom-0 h-0.5 bg-purple-500 z-30" />
-                        )}
                       </div>
                     )
                   })}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>

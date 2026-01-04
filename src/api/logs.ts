@@ -9,6 +9,18 @@ const logs = new Hono<{ Bindings: Env }>();
 // Apply auth middleware to all routes
 logs.use('*', authMiddleware);
 
+// Validate date has at least year and month (YYYY-MM or YYYY-MM-DD)
+function isValidDate(date: string | null | undefined): boolean {
+  if (!date) return false;
+  const parts = date.split('-');
+  if (parts.length < 2) return false;
+  const [year, month] = parts;
+  if (!/^\d{4}$/.test(year)) return false;
+  if (!/^\d{2}$/.test(month)) return false;
+  const monthNum = parseInt(month, 10);
+  return monthNum >= 1 && monthNum <= 12;
+}
+
 // GET /api/logs - List user's game logs
 logs.get('/', async (c) => {
   const userId = c.get('userId');
@@ -35,11 +47,11 @@ logs.get('/', async (c) => {
   const params: any[] = [userId];
 
   if (year) {
-    query += ` AND (gl.end_date LIKE ? OR (gl.end_date IS NULL AND gl.start_date LIKE ?))`;
+    query += ` AND (gl.start_date LIKE ? OR (gl.start_date IS NULL AND gl.end_date LIKE ?))`;
     params.push(`${year}-%`, `${year}-%`);
   }
 
-  query += ` ORDER BY COALESCE(gl.end_date, gl.start_date) DESC, gl.sort_order DESC`;
+  query += ` ORDER BY COALESCE(gl.start_date, gl.end_date) DESC`;
 
   const result = await c.env.DB.prepare(query).bind(...params).all();
 
@@ -67,8 +79,27 @@ logs.post('/', async (c) => {
     }, 400);
   }
 
-  // Default to current year if no dates provided
-  const finalStartDate = start_date || (end_date ? null : `${new Date().getFullYear()}-01-01`);
+  // Default to current year-month if no start_date provided
+  const now = new Date();
+  const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const finalStartDate = start_date || currentYearMonth;
+
+  // Validate start_date has year and month
+  if (!isValidDate(finalStartDate)) {
+    return c.json({
+      data: null,
+      error: { message: 'start_date must have year and month (YYYY-MM or YYYY-MM-DD)', code: 'VALIDATION_ERROR' }
+    }, 400);
+  }
+
+  // Validate end_date if provided
+  if (end_date && !isValidDate(end_date)) {
+    return c.json({
+      data: null,
+      error: { message: 'end_date must have year and month (YYYY-MM or YYYY-MM-DD)', code: 'VALIDATION_ERROR' }
+    }, 400);
+  }
+
   const finalEndDate = end_date || null;
   const finalRating = rating ?? 5;
 
@@ -148,10 +179,24 @@ logs.patch('/:id', async (c) => {
     values.push(body.game_name);
   }
   if (body.start_date !== undefined) {
+    // start_date is required and must have year+month
+    if (!body.start_date || !isValidDate(body.start_date)) {
+      return c.json({
+        data: null,
+        error: { message: 'start_date must have year and month (YYYY-MM or YYYY-MM-DD)', code: 'VALIDATION_ERROR' }
+      }, 400);
+    }
     updates.push('start_date = ?');
-    values.push(body.start_date || null);
+    values.push(body.start_date);
   }
   if (body.end_date !== undefined) {
+    // end_date is optional but if provided must have year+month
+    if (body.end_date && !isValidDate(body.end_date)) {
+      return c.json({
+        data: null,
+        error: { message: 'end_date must have year and month (YYYY-MM or YYYY-MM-DD)', code: 'VALIDATION_ERROR' }
+      }, 400);
+    }
     updates.push('end_date = ?');
     values.push(body.end_date || null);
   }
@@ -213,30 +258,6 @@ logs.delete('/:id', async (c) => {
   await c.env.DB.prepare(
     'DELETE FROM game_logs WHERE id = ?'
   ).bind(logId).run();
-
-  return c.json({ data: { success: true }, error: null });
-});
-
-// PATCH /api/logs/reorder - Bulk update sort order
-logs.patch('/reorder', async (c) => {
-  const userId = c.get('userId');
-  const body = await c.req.json();
-
-  const { updates } = body;
-
-  if (!Array.isArray(updates)) {
-    return c.json({
-      data: null,
-      error: { message: 'updates must be an array', code: 'VALIDATION_ERROR' }
-    }, 400);
-  }
-
-  // Verify all logs belong to user and update
-  for (const { id, sort_order } of updates) {
-    await c.env.DB.prepare(
-      'UPDATE game_logs SET sort_order = ?, updated_at = unixepoch() WHERE id = ? AND user_id = ?'
-    ).bind(sort_order, id, userId).run();
-  }
 
   return c.json({ data: { success: true }, error: null });
 });
