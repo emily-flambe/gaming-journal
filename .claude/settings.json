@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(cat .dev.vars*)",
+      "Bash(cat *.env*)",
+      "Bash(*GOOGLE_CLIENT_SECRET*)",
+      "Bash(*JWT_SECRET*)",
+      "Bash(*RAWG_API_KEY*)",
+      "Read(.dev.vars*)",
+      "Read(*.env*)",
+      "Edit(.dev.vars*)",
+      "Edit(*.env*)",
+      "Write(.dev.vars*)",
+      "Write(*.env*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run lint -- --fix --no-warn-ignored ${file} 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
