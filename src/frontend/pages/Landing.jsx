@@ -51,15 +51,15 @@ export default function Landing() {
         <h1
           className="font-display text-5xl md:text-7xl font-600 leading-[1.1] tracking-tight mb-8 animate-fade-up"
         >
-          Your gaming story,{' '}
-          <span className="text-land-accent">written down.</span>
+          It's a journal,{' '}
+          <span className="text-land-accent">for gaming.</span>
         </h1>
 
         <p
           className="text-lg md:text-xl text-land-muted leading-relaxed max-w-lg mb-12 animate-fade-up"
           style={{ animationDelay: '0.1s' }}
         >
-          A personal timeline for the games you play. Track, journal, and share — all in one place.
+          Wow.
         </p>
 
         {/* CTA */}
