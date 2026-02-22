@@ -98,7 +98,7 @@ export default function TimelineView({
   function startEditing() {
     setEditValues({
       notes: selectedLog.notes || '',
-      rating: selectedLog.rating || 5,
+      rating: selectedLog.rating ?? 5,
       start_date: selectedLog.start_date || '',
       end_date: selectedLog.end_date || '',
     })

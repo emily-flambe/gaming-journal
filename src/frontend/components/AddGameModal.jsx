@@ -101,7 +101,7 @@ export default function AddGameModal({ onClose, onSave }) {
           game_name: selectedGame.name,
           start_date: startDateStr,
           end_date: endDateStr,
-          rating: rating ? parseInt(rating, 10) : 5,
+          rating: rating !== '' ? parseInt(rating, 10) : 5,
           notes: notes || null,
         }),
       })
